@@ -17,6 +17,7 @@ import DataGrid, {
     Popup,
     Form
 } from 'devextreme-react/data-grid';
+import { Item as FormItem } from 'devextreme-react/form';
 import { deleteById, get, getById, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
 import { Workbook } from 'exceljs';
@@ -85,7 +86,7 @@ const Items = () => {
             });
         });
     };
-    
+
     return (
         <React.Fragment>
             <h2 className={'content-block'}>Items</h2>
@@ -116,7 +117,9 @@ const Items = () => {
                 >
                     <Popup title={`${popupTitle} Item`} showTitle width={'50%'} height={'auto'} />
                     <Form>
-                        <Item dataField='ItemName' />
+                        <FormItem itemType='group' colCount={1} colSpan={2}>
+                            <FormItem dataField='ItemName' />
+                        </FormItem>
                     </Form>
                 </Editing>
                 <Column
