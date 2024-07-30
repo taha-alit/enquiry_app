@@ -33,6 +33,7 @@ import Validator, { RequiredRule } from 'devextreme-react/validator';
 
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
+import { newDoctorDefaults, CreateEditForm as DoctorCreateEditForm } from '../doctors';
 
 const phonePattern = /^[6-9]\d{9}$/;
 
@@ -56,8 +57,8 @@ const Appointments = () => {
         key: 'AppointmentID',
         async load() {
             try {
-                const patientData = await makeRequest('Patient/GetList', get);
-                return patientData;
+                const response = await makeRequest('Patient/GetList', get);
+                return response;
             } catch (error) {
                 notify(error.message, 'error', 2000);
             }
@@ -395,11 +396,12 @@ const Appointments = () => {
                     cities={cities}
                     specialities={specialities}
                     doctors={doctors}
+                    makeRequest={makeRequest}
                 />
             </FormPopup>
 
-            <DeletePopup title={'Delete Appointment'} visible={deletePopupVisible} setVisible={changeDeletePopupVisibility} onDelete={onDelete} width='25%'>
-                    <div className='delete-content'>Are you sure you want to delete this record?</div>    
+            <DeletePopup title={'Delete Appointment'} visible={deletePopupVisible} setVisible={changeDeletePopupVisibility} onDelete={onDelete}>
+                <div className='delete-content'>Are you sure you want to delete this record?</div>
             </DeletePopup>
 
         </React.Fragment>
@@ -407,16 +409,20 @@ const Appointments = () => {
 
 }
 
-const CreateEditForm = ({ data, onDataChanged, editing, states, cities, specialities, doctors }) => {
+const CreateEditForm = ({ data, onDataChanged, editing, states, cities, specialities, doctors, makeRequest }) => {
 
     const selectBoxRef = React.useRef();
     const [formData, setFormData] = React.useState({ ...data });
+
+    const [doctorPopVisible, setDoctorPopVisible] = React.useState(false);
+    const [formDoctorInitData, setFormDoctorInitData] = React.useState({ ...newDoctorDefaults });
+    let newDoctorData = { ...newDoctorDefaults };
 
     const addDoctorButtonOption = React.useMemo(() => ({
         icon: 'plus',
         stylingMode: 'text',
         onClick: () => {
-
+            setDoctorPopVisible(true);
         }
     }), []);
 
@@ -444,6 +450,30 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
         onDataChanged(newData);
         setFormData(newData);
     }
+
+    const changeDoctorPopupVisibility = React.useCallback((isVisible) => {
+        setFormDoctorInitData({ ...newDoctorDefaults });
+        setDoctorPopVisible(isVisible);
+    }, []);
+
+    const onDoctorDataChanged = React.useCallback((data) => {
+        newDoctorData = data
+    });
+
+    const onDoctorSaveClick = async () => {
+        try {
+            let response = await makeRequest('Doctor/Insert', post, newDoctorData);;
+            notify({
+                message: response,
+                position: { at: 'bottom center', my: 'bottom center' }
+            },
+                'success'
+            );
+            setFormDoctorInitData({ ...newDoctorDefaults });
+        } catch (error) {
+            notify(error.message, 'error', 2000);
+        }
+    };
 
     return (
         <React.Fragment>
@@ -624,6 +654,15 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                     </SimpleItem>
                 </GroupItem>
             </Form>
+
+            <FormPopup title={'New Doctor'} visible={doctorPopVisible} setVisible={changeDoctorPopupVisibility} onSave={onDoctorSaveClick} height='340'>
+                <DoctorCreateEditForm
+                    onDataChanged={onDoctorDataChanged}
+                    editing
+                    data={formDoctorInitData}
+                    specialities={specialities}
+                />
+            </FormPopup>
         </React.Fragment>
     );
 }

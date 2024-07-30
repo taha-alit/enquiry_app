@@ -1,0 +1,39 @@
+.add_btn {
+    background-color: #363640;
+    color: #fff;
+    :hover {
+        background-color: #555557;
+    }
+    .dx-icon {
+        color: #fff;
+    }
+}
+
+.separator {
+    height: 24px;
+    width: 1px;
+    background: #555557;
+
+    .dx-toolbar-menu-section & {
+        height: 1px;
+        width: auto;
+    }
+}
+
+.toolbar-header {
+    font-size: 24px;
+    font-weight: 400;
+    padding-right: 25px;
+}
+
+.delete-content {
+    font-size: 20px;
+    font-weight: 400;
+    padding-right: 25px;
+}
+
+.dx-command-edit {
+    .dx-link {
+        color: #555557;
+    }
+}

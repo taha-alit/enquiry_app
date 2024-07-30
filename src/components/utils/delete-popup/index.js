@@ -9,7 +9,7 @@ import { Button } from 'devextreme-react';
 export const DeletePopup = ({
     title,
     visible,
-    width = '50%',
+    width = 'auto',
     height = 'auto',
     onDelete,
     setVisible,
