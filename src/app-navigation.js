@@ -9,11 +9,11 @@ export const navigation = [
     path: '/appointments',
     icon: 'group'
   },
-  // {
-  //   text: 'Receipt',
-  //   path: '/receipts',
-  //   icon: 'taskinprogress'
-  // },
+  {
+    text: 'Receipt',
+    path: '/receipts',
+    icon: 'taskinprogress'
+  },
   {
     text: 'Item',
     path: '/items',
