@@ -30,6 +30,7 @@ import { TextBox } from 'devextreme-react/text-box';
 import { exportDataGrid } from 'devextreme/pdf_exporter';
 import { exportDataGrid as exportDataGridXSLX } from 'devextreme/excel_exporter';
 import Validator, { RequiredRule } from 'devextreme-react/validator';
+import { newSpecialityDefaults, CreateEditPopup as SpecialityCreateEditPopup } from '../specialities';
 
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -45,8 +46,6 @@ const Doctors = () => {
     const [formDoctorInitData, setFormDoctorInitData] = React.useState({ ...newDoctorDefaults });
     const [deleteKey, setDeleteKey] = React.useState(null);
 
-    let newDoctorData = { ...newDoctorDefaults };
-
     const dataSource = React.useMemo(() => new DataSource({
         key: 'DoctorID',
         async load() {
@@ -60,17 +59,20 @@ const Doctors = () => {
     }), []);
 
     React.useEffect(() => {
-        (async function () {
-            try {
-                resetError();
-                const specialitiesData = await makeRequest('Speciality/GetList', get, {});
-                setSpecialities(specialitiesData);
-            } catch (err) {
-                console.log(err.message);
-                notify(err.message, 'error', 2000);
-            }
-        }())
-    }, []);
+        fetchSpeciality();
+    },[]);
+
+    const fetchSpeciality = async () => {
+        try {
+            resetError();
+            const specialitiesData = await makeRequest('Speciality/GetList', get, {});
+            setSpecialities(specialitiesData);
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
+        }
+    }
+    const refreshSpeciality = () => fetchSpeciality();
 
     const changePopupVisibility = React.useCallback((isVisible) => {
         setFormDoctorInitData({ ...newDoctorDefaults });
@@ -81,10 +83,6 @@ const Doctors = () => {
         setDeleteKey(null);
         setDeletePopupVisible(isVisible);
     }, []);
-
-    const onDataChanged = React.useCallback((data) => {
-        newDoctorData = data
-    });
 
     const refresh = () => {
         gridRef.current.instance().refresh();
@@ -137,27 +135,6 @@ const Doctors = () => {
         setDeleteKey(evt.row.data.DoctorID);
         setDeletePopupVisible(true);
     }
-
-    const onSaveClick = async () => {
-        try {
-            let response;
-            if (newDoctorData.DoctorID != 0) {
-                response = await makeRequest('Doctor/Update', put, newDoctorData);
-            } else {
-                response = await makeRequest('Doctor/Insert', post, newDoctorData);
-            }
-            notify({
-                message: response,
-                position: { at: 'bottom center', my: 'bottom center' }
-            },
-                'success'
-            );
-            setFormDoctorInitData({ ...newDoctorDefaults });
-            refresh();
-        } catch (error) {
-            notify(error.message, 'error', 2000);
-        }
-    };
 
     const onDelete = async () => {
         try {
@@ -319,14 +296,19 @@ const Doctors = () => {
                 </Toolbar>
             </DataGrid>
 
-            <FormPopup title={'New Doctor'} visible={popupVisible} setVisible={changePopupVisibility} onSave={onSaveClick} height='340'>
-                <CreateEditForm
-                    onDataChanged={onDataChanged}
-                    editing
-                    data={formDoctorInitData}
-                    specialities={specialities}
-                />
-            </FormPopup>
+            {
+                popupVisible && (
+                    <CreateEditPopup
+                        isOpen={popupVisible}
+                        onClose={changePopupVisibility}
+                        data={formDoctorInitData}
+                        specialities={specialities}
+                        makeRequest={makeRequest}
+                        refresh={refresh}
+                        refreshSpeciality={refreshSpeciality}
+                    />
+                )
+            }
 
             <DeletePopup title={'Delete Doctor'} visible={deletePopupVisible} setVisible={changeDeletePopupVisibility} onDelete={onDelete}>
                 <div className='delete-content'>Are you sure you want to delete this record?</div>
@@ -337,16 +319,74 @@ const Doctors = () => {
 
 }
 
-export const CreateEditForm = ({ data, onDataChanged, editing, specialities }) => {
+export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, ...props }) => {
+    const [formDoctorInitData, setFormDoctorInitData] = React.useState({ ...data });
 
-    const selectBoxRef = React.useRef();
+    let newDoctorData = { ...newDoctorDefaults };
+
+    React.useEffect(() => {
+        setFormDoctorInitData({ ...data });
+    }, [data]);
+
+    const onDataChanged = React.useCallback((data) => {
+        newDoctorData = data
+    });
+
+    const onSaveClick = async () => {
+        try {
+            let response;
+            if (newDoctorData.DoctorID != 0) {
+                response = await makeRequest('Doctor/Update', put, newDoctorData);
+            } else {
+                response = await makeRequest('Doctor/Insert', post, newDoctorData);
+            }
+            notify({
+                message: response,
+                position: { at: 'bottom center', my: 'bottom center' }
+            },
+                'success'
+            );
+            setFormDoctorInitData({ ...newDoctorDefaults });
+            refresh();
+        } catch (error) {
+            notify(error.message, 'error', 2000);
+        }
+    };
+
+    return (
+
+        <FormPopup title={'New Doctor'} visible={isOpen} setVisible={onClose} onSave={onSaveClick} height='340'>
+            <CreateEditForm
+                onDataChanged={onDataChanged}
+                editing
+                data={formDoctorInitData}
+                makeRequest={makeRequest}
+                {...props}
+            />
+        </FormPopup>
+    )
+
+}
+
+const CreateEditForm = ({ data, onDataChanged, editing, specialities, makeRequest, refreshSpeciality }) => {
+    const specialitySelectBoxRef = React.useRef();
     const [formData, setFormData] = React.useState({ ...data });
 
-    const selectboxdropbuttonOption = React.useMemo(() => ({
+    const [specialityPopupVisible, setSpecialityPopupVisible] = React.useState(false);
+
+    const addSpecialityButtonOption = React.useMemo(() => ({
+        icon: 'plus',
+        stylingMode: 'text',
+        onClick: () => {
+            setSpecialityPopupVisible(true);
+        }
+    }), []);
+
+    const specialitySelectboxdropbuttonOption = React.useMemo(() => ({
         icon: "spindown",
         stylingMode: "text",
         onClick: (e) => {
-            var selectBoxInstance = selectBoxRef.current?.instance();
+            var selectBoxInstance = specialitySelectBoxRef.current?.instance();
             var isOpened = selectBoxInstance.option("opened");
             if (isOpened) {
                 selectBoxInstance.close();
@@ -366,6 +406,10 @@ export const CreateEditForm = ({ data, onDataChanged, editing, specialities }) =
         onDataChanged(newData);
         setFormData(newData);
     }
+
+    const changeSpecilaityPopupVisibility = React.useCallback((isVisible) => {
+        setSpecialityPopupVisible(isVisible);
+    }, []);
 
     return (
         <React.Fragment>
@@ -388,9 +432,10 @@ export const CreateEditForm = ({ data, onDataChanged, editing, specialities }) =
                             onValueChange={updateField('Education')}
                         />
                     </SimpleItem>
-                    
+
                     <SimpleItem>
                         <SelectBox
+                            ref={specialitySelectBoxRef}
                             label='Speciality'
                             value={formData.SpecialityID}
                             dataSource={specialities}
@@ -400,6 +445,16 @@ export const CreateEditForm = ({ data, onDataChanged, editing, specialities }) =
                             stylingMode='outlined'
                             onValueChange={updateField('SpecialityID')}
                         >
+                            <SelectButton
+                                name='add_speciality'
+                                location='after'
+                                options={addSpecialityButtonOption}
+                            />
+                            <SelectButton
+                                name='open_dropdown'
+                                location='after'
+                                options={specialitySelectboxdropbuttonOption}
+                            />
                             <Validator>
                                 <RequiredRule />
                             </Validator>
@@ -407,9 +462,21 @@ export const CreateEditForm = ({ data, onDataChanged, editing, specialities }) =
                     </SimpleItem>
                 </GroupItem>
             </Form>
+            {
+                specialityPopupVisible && (
+                    <SpecialityCreateEditPopup
+                        isOpen={specialityPopupVisible}
+                        onClose={changeSpecilaityPopupVisibility}
+                        data={newSpecialityDefaults}
+                        makeRequest={makeRequest}
+                        refresh={refreshSpeciality}
+                    />
+                )
+            }
         </React.Fragment>
     );
 }
+
 
 export const newDoctorDefaults = {
     DoctorID: 0,

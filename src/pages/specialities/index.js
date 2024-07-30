@@ -40,8 +40,6 @@ const Specialities = () => {
     const [formSpecialityInitData, setFormSpecialityInitData] = React.useState({ ...newSpecialityDefaults });
     const [deleteKey, setDeleteKey] = React.useState(null);
 
-    let newSpecialityData = { ...newSpecialityDefaults };
-
     const dataSource = React.useMemo(() => new DataSource({
         key: 'SpecialityID',
         async load() {
@@ -63,10 +61,6 @@ const Specialities = () => {
         setDeleteKey(null);
         setDeletePopupVisible(isVisible);
     }, []);
-
-    const onDataChanged = React.useCallback((data) => {
-        newSpecialityData = data
-    });
 
     const refresh = () => {
         gridRef.current.instance().refresh();
@@ -119,27 +113,6 @@ const Specialities = () => {
         setDeleteKey(evt.row.data.SpecialityID);
         setDeletePopupVisible(true);
     }
-
-    const onSaveClick = async () => {
-        try {
-            let response;
-            if (newSpecialityData.SpecialityID != 0) {
-                response = await makeRequest('Speciality/Update', put, newSpecialityData);
-            } else {
-                response = await makeRequest('Speciality/Insert', post, newSpecialityData);
-            }
-            notify({
-                message: response,
-                position: { at: 'bottom center', my: 'bottom center' }
-            },
-                'success'
-            );
-            setFormSpecialityInitData({ ...newSpecialityDefaults });
-            refresh();
-        } catch (error) {
-            notify(error.message, 'error', 2000);
-        }
-    };
 
     const onDelete = async () => {
         try {
@@ -294,21 +267,73 @@ const Specialities = () => {
                     </Item>
                 </Toolbar>
             </DataGrid>
+            {
+                popupVisible && (
 
-            <FormPopup title={'New Speciality'} visible={popupVisible} setVisible={changePopupVisibility} onSave={onSaveClick} height='300'>
-                <CreateEditForm
-                    onDataChanged={onDataChanged}
-                    editing
-                    data={formSpecialityInitData}
-                />
-            </FormPopup>
-
+                    <CreateEditPopup
+                        isOpen={popupVisible}
+                        onClose={changePopupVisibility}
+                        data={formSpecialityInitData}
+                        makeRequest={makeRequest}
+                        refresh={refresh}
+                    />
+                )
+            }
             <DeletePopup title={'Delete Speciality'} visible={deletePopupVisible} setVisible={changeDeletePopupVisibility} onDelete={onDelete}>
                 <div className='delete-content'>Are you sure you want to delete this record?</div>
             </DeletePopup>
 
         </React.Fragment>
     );
+
+}
+
+export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, ...props }) => {
+    const [formSpecialityInitData, setFormSpecialityInitData] = React.useState({ ...data });
+
+    let newSpecialityData = { ...newSpecialityDefaults };
+
+    React.useEffect(() => {
+        console.log(data)
+        setFormSpecialityInitData({ ...data });
+    }, [data]);
+
+    const onDataChanged = React.useCallback((data) => {
+        newSpecialityData = data
+    });
+
+    const onSaveClick = async () => {
+        try {
+            let response;
+            if (newSpecialityData.SpecialityID != 0) {
+                response = await makeRequest('Speciality/Update', put, newSpecialityData);
+            } else {
+                response = await makeRequest('Speciality/Insert', post, newSpecialityData);
+            }
+            notify({
+                message: response,
+                position: { at: 'bottom center', my: 'bottom center' }
+            },
+                'success'
+            );
+            setFormSpecialityInitData({ ...newSpecialityDefaults });
+            refresh();
+        } catch (error) {
+            notify(error.message, 'error', 2000);
+        }
+    };
+
+    return (
+
+        <FormPopup title={'New Speciality'} visible={isOpen} setVisible={onClose} onSave={onSaveClick} height='300'>
+            <CreateEditForm
+                onDataChanged={onDataChanged}
+                editing
+                data={formSpecialityInitData}
+                {...props}
+            />
+        </FormPopup>
+    )
 
 }
 
@@ -364,7 +389,7 @@ const CreateEditForm = ({ data, onDataChanged, editing }) => {
     );
 }
 
-const newSpecialityDefaults = {
+export const newSpecialityDefaults = {
     SpecialityID: 0,
     SpecialityName: '',
     isGynac: false,

@@ -33,7 +33,8 @@ import Validator, { RequiredRule } from 'devextreme-react/validator';
 
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
-import { newDoctorDefaults, CreateEditForm as DoctorCreateEditForm } from '../doctors';
+import { newDoctorDefaults, CreateEditPopup as DoctorCreateEditPopup } from '../doctors';
+import { newSpecialityDefaults, CreateEditPopup as SpecialityCreateEditPopup } from '../specialities';
 
 const phonePattern = /^[6-9]\d{9}$/;
 
@@ -51,8 +52,6 @@ const Appointments = () => {
     const [formAppointmentInitData, setFormAppointmentInitData] = React.useState({ ...newAppointmentDefaults });
     const [deleteKey, setDeleteKey] = React.useState(null);
 
-    let newAppointmentData = { ...newAppointmentDefaults };
-
     const dataSource = React.useMemo(() => new DataSource({
         key: 'AppointmentID',
         async load() {
@@ -66,56 +65,57 @@ const Appointments = () => {
     }), [])
 
     React.useEffect(() => {
-        (async function () {
-            try {
-                resetError();
-                const doctorsData = await makeRequest('Doctor/GetList', get, {});
-                setDoctors(doctorsData);
-            } catch (err) {
-                console.log(err.message);
-                notify(err.message, 'error', 2000);
-            }
-        }())
+        fetchDoctors();
+        fetchSpeciality();
+        fetchStates();
+        fetchCities();
     }, []);
 
-    React.useEffect(() => {
-        (async function () {
-            try {
-                resetError();
-                const statesData = await makeRequest('State/GetList', get, {});
-                setStates(statesData);
-            } catch (err) {
-                console.log(err.message);
-                notify(err.message, 'error', 2000);
-            }
-        }())
-    }, []);
+    const fetchDoctors = async () => {
+        try {
+            resetError();
+            const doctorsData = await makeRequest('Doctor/GetList', get, {});
+            setDoctors(doctorsData);
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
+        }
+    }
+    const fetchStates = async () => {
+        try {
+            resetError();
+            const statesData = await makeRequest('State/GetList', get, {});
+            setStates(statesData);
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
+        }
+    }
+    const fetchCities = async () => {
+        try {
+            resetError();
+            const citiesData = await makeRequest('City/GetList', get, {});
+            setCities(citiesData);
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
+        }
+    }
+    const fetchSpeciality = async () => {
+        try {
+            resetError();
+            const specialitiesData = await makeRequest('Speciality/GetList', get, {});
+            setSpecialities(specialitiesData);
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
+        }
+    }
 
-    React.useEffect(() => {
-        (async function () {
-            try {
-                resetError();
-                const citiesData = await makeRequest('City/GetList', get, {});
-                setCities(citiesData);
-            } catch (err) {
-                console.log(err.message);
-                notify(err.message, 'error', 2000);
-            }
-        }())
-    }, []);
-
-    React.useEffect(() => {
-        (async function () {
-            try {
-                resetError();
-                const specialitiesData = await makeRequest('Speciality/GetList', get, {});
-                setSpecialities(specialitiesData);
-            } catch (err) {
-                console.log(err.message);
-                notify(err.message, 'error', 2000);
-            }
-        }())
-    }, []);
+    const refreshDoctors = () => fetchDoctors();
+    const refreshSpeciality = () => fetchSpeciality();
+    const refreshStates = () => fetchStates();
+    const refreshCities = () => fetchCities();
 
     const changePopupVisibility = React.useCallback((isVisible) => {
         setFormAppointmentInitData({ ...newAppointmentDefaults });
@@ -126,10 +126,6 @@ const Appointments = () => {
         setDeleteKey(null);
         setDeletePopupVisible(isVisible);
     }, []);
-
-    const onDataChanged = React.useCallback((data) => {
-        newAppointmentData = data
-    });
 
     const refresh = () => {
         gridRef.current.instance().refresh();
@@ -182,28 +178,6 @@ const Appointments = () => {
         setDeleteKey(evt.row.data.AppointmentID);
         setDeletePopupVisible(true);
     }
-
-    const onSaveClick = async () => {
-        newAppointmentData.FullName = `${newAppointmentData.FirstName} ${newAppointmentData.LastName || ''}`;
-        try {
-            let response;
-            if (newAppointmentData.AppointmentID != 0) {
-                response = await makeRequest('Patient/Update', put, newAppointmentData);
-            } else {
-                response = await makeRequest('Patient/Insert', post, newAppointmentData);
-            }
-            notify({
-                message: response,
-                position: { at: 'bottom center', my: 'bottom center' }
-            },
-                'success'
-            );
-            setFormAppointmentInitData({ ...newAppointmentDefaults });
-            refresh();
-        } catch (error) {
-            notify(error.message, 'error', 2000);
-        }
-    };
 
     const onDelete = async () => {
         try {
@@ -387,18 +361,23 @@ const Appointments = () => {
                 </Toolbar>
             </DataGrid>
 
-            <FormPopup title={'New Appointment'} visible={popupVisible} setVisible={changePopupVisibility} onSave={onSaveClick}>
-                <CreateEditForm
-                    onDataChanged={onDataChanged}
-                    editing
-                    data={formAppointmentInitData}
-                    states={states}
-                    cities={cities}
-                    specialities={specialities}
-                    doctors={doctors}
-                    makeRequest={makeRequest}
-                />
-            </FormPopup>
+            {
+                popupVisible && (
+                    <CreateEditPopup
+                        isOpen={popupVisible}
+                        onClose={changePopupVisibility}
+                        data={formAppointmentInitData}
+                        makeRequest={makeRequest}
+                        refresh={refresh}
+                        states={states}
+                        cities={cities}
+                        specialities={specialities}
+                        doctors={doctors}
+                        refreshDoctors={refreshDoctors}
+                        refreshSpeciality={refreshSpeciality}
+                    />
+                )
+            }
 
             <DeletePopup title={'Delete Appointment'} visible={deletePopupVisible} setVisible={changeDeletePopupVisibility} onDelete={onDelete}>
                 <div className='delete-content'>Are you sure you want to delete this record?</div>
@@ -409,28 +388,101 @@ const Appointments = () => {
 
 }
 
-const CreateEditForm = ({ data, onDataChanged, editing, states, cities, specialities, doctors, makeRequest }) => {
+export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, ...props }) => {
+    const [formAppointmentInitData, setFormAppointmentInitData] = React.useState({ ...data });
 
-    const selectBoxRef = React.useRef();
+    let newAppointmentData = { ...newAppointmentDefaults };
+
+    React.useEffect(() => {
+        setFormAppointmentInitData({ ...data });
+    }, [data]);
+
+    const onDataChanged = React.useCallback((data) => {
+        newAppointmentData = data
+    });
+
+    const onSaveClick = async () => {
+        newAppointmentData.FullName = `${newAppointmentData.FirstName} ${newAppointmentData.LastName || ''}`;
+        try {
+            let response;
+            if (newAppointmentData.AppointmentID != 0) {
+                response = await makeRequest('Patient/Update', put, newAppointmentData);
+            } else {
+                response = await makeRequest('Patient/Insert', post, newAppointmentData);
+            }
+            notify({
+                message: response,
+                position: { at: 'bottom center', my: 'bottom center' }
+            },
+                'success'
+            );
+            setFormAppointmentInitData({ ...newAppointmentDefaults });
+            refresh();
+        } catch (error) {
+            notify(error.message, 'error', 2000);
+        }
+    };
+
+    return (
+
+        <FormPopup title={'New Appointment'} visible={isOpen} setVisible={onClose} onSave={onSaveClick}>
+            <CreateEditForm
+                onDataChanged={onDataChanged}
+                editing
+                data={formAppointmentInitData}
+                makeRequest={makeRequest}
+                {...props}
+            />
+        </FormPopup>
+    )
+
+}
+
+const CreateEditForm = ({ data, onDataChanged, editing, states, cities, specialities, doctors, makeRequest, refreshDoctors, refreshSpeciality }) => {
+
+    const doctorSelectBoxRef = React.useRef();
+    const specialitySelectBoxRef = React.useRef();
     const [formData, setFormData] = React.useState({ ...data });
 
-    const [doctorPopVisible, setDoctorPopVisible] = React.useState(false);
-    const [formDoctorInitData, setFormDoctorInitData] = React.useState({ ...newDoctorDefaults });
-    let newDoctorData = { ...newDoctorDefaults };
+    const [doctorPopupVisible, setDoctorPopupVisible] = React.useState(false);
+    const [specialityPopupVisible, setSpecialityPopupVisible] = React.useState(false);
 
     const addDoctorButtonOption = React.useMemo(() => ({
         icon: 'plus',
         stylingMode: 'text',
         onClick: () => {
-            setDoctorPopVisible(true);
+            setDoctorPopupVisible(true);
         }
     }), []);
 
-    const selectboxdropbuttonOption = React.useMemo(() => ({
+    const addSpecialityButtonOption = React.useMemo(() => ({
+        icon: 'plus',
+        stylingMode: 'text',
+        onClick: () => {
+            setSpecialityPopupVisible(true);
+        }
+    }), []);
+
+    const doctorsSelectboxdropbuttonOption = React.useMemo(() => ({
         icon: "spindown",
         stylingMode: "text",
         onClick: (e) => {
-            var selectBoxInstance = selectBoxRef.current?.instance();
+            var selectBoxInstance = doctorSelectBoxRef.current?.instance();
+            var isOpened = selectBoxInstance.option("opened");
+            if (isOpened) {
+                selectBoxInstance.close();
+            } else {
+                selectBoxInstance.open();
+                selectBoxInstance.focus();
+            }
+        },
+    }), []);
+
+    const specialitySelectboxdropbuttonOption = React.useMemo(() => ({
+        icon: "spindown",
+        stylingMode: "text",
+        onClick: (e) => {
+            var selectBoxInstance = specialitySelectBoxRef.current?.instance();
             var isOpened = selectBoxInstance.option("opened");
             if (isOpened) {
                 selectBoxInstance.close();
@@ -452,28 +504,12 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
     }
 
     const changeDoctorPopupVisibility = React.useCallback((isVisible) => {
-        setFormDoctorInitData({ ...newDoctorDefaults });
-        setDoctorPopVisible(isVisible);
+        setDoctorPopupVisible(isVisible);
     }, []);
 
-    const onDoctorDataChanged = React.useCallback((data) => {
-        newDoctorData = data
-    });
-
-    const onDoctorSaveClick = async () => {
-        try {
-            let response = await makeRequest('Doctor/Insert', post, newDoctorData);;
-            notify({
-                message: response,
-                position: { at: 'bottom center', my: 'bottom center' }
-            },
-                'success'
-            );
-            setFormDoctorInitData({ ...newDoctorDefaults });
-        } catch (error) {
-            notify(error.message, 'error', 2000);
-        }
-    };
+    const changeSpecilaityPopupVisibility = React.useCallback((isVisible) => {
+        setSpecialityPopupVisible(isVisible);
+    }, []);
 
     return (
         <React.Fragment>
@@ -602,6 +638,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                     </SimpleItem>
                     <SimpleItem>
                         <SelectBox
+                            ref={specialitySelectBoxRef}
                             label='Speciality'
                             value={formData.SpecialityID}
                             dataSource={specialities}
@@ -611,6 +648,16 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                             stylingMode='outlined'
                             onValueChange={updateField('SpecialityID')}
                         >
+                            <SelectButton
+                                name='add_speciality'
+                                location='after'
+                                options={addSpecialityButtonOption}
+                            />
+                            <SelectButton
+                                name='open_dropdown'
+                                location='after'
+                                options={specialitySelectboxdropbuttonOption}
+                            />
                             <Validator>
                                 <RequiredRule />
                             </Validator>
@@ -618,7 +665,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                     </SimpleItem>
                     <SimpleItem>
                         <SelectBox
-                            ref={selectBoxRef}
+                            ref={doctorSelectBoxRef}
                             label='Doctor'
                             value={formData.DoctorID}
                             dataSource={doctors}
@@ -636,7 +683,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                             <SelectButton
                                 name='open_dropdown'
                                 location='after'
-                                options={selectboxdropbuttonOption}
+                                options={doctorsSelectboxdropbuttonOption}
                             />
                             <Validator>
                                 <RequiredRule />
@@ -655,14 +702,29 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                 </GroupItem>
             </Form>
 
-            <FormPopup title={'New Doctor'} visible={doctorPopVisible} setVisible={changeDoctorPopupVisibility} onSave={onDoctorSaveClick} height='340'>
-                <DoctorCreateEditForm
-                    onDataChanged={onDoctorDataChanged}
-                    editing
-                    data={formDoctorInitData}
-                    specialities={specialities}
-                />
-            </FormPopup>
+            {
+                doctorPopupVisible && (
+                    <DoctorCreateEditPopup
+                        isOpen={doctorPopupVisible}
+                        onClose={changeDoctorPopupVisibility}
+                        data={newDoctorDefaults}
+                        specialities={specialities}
+                        makeRequest={makeRequest}
+                        refresh={refreshDoctors}
+                    />
+                )
+            }
+            {
+                specialityPopupVisible && (
+                    <SpecialityCreateEditPopup
+                        isOpen={specialityPopupVisible}
+                        onClose={changeSpecilaityPopupVisibility}
+                        data={newSpecialityDefaults}
+                        makeRequest={makeRequest}
+                        refresh={refreshSpeciality}
+                    />
+                )
+            }
         </React.Fragment>
     );
 }

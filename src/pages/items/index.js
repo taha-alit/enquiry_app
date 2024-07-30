@@ -41,8 +41,6 @@ const Items = () => {
     const [formItemInitData, setFormItemInitData] = React.useState({ ...newItemDefaults });
     const [deleteKey, setDeleteKey] = React.useState(null);
 
-    let newItemData = { ...newItemDefaults };
-
     const dataSource = React.useMemo(() => new DataSource({
         key: 'ItemID',
         async load() {
@@ -64,10 +62,6 @@ const Items = () => {
         setDeleteKey(null);
         setDeletePopupVisible(isVisible);
     }, []);
-
-    const onDataChanged = React.useCallback((data) => {
-        newItemData = data
-    });
 
     const refresh = () => {
         gridRef.current.instance().refresh();
@@ -120,27 +114,6 @@ const Items = () => {
         setDeleteKey(evt.row.data.ItemID);
         setDeletePopupVisible(true);
     }
-
-    const onSaveClick = async () => {
-        try {
-            let response;
-            if (newItemData.ItemID != 0) {
-                response = await makeRequest('Item/Update', put, newItemData);
-            } else {
-                response = await makeRequest('Item/Insert', post, newItemData);
-            }
-            notify({
-                message: response,
-                position: { at: 'bottom center', my: 'bottom center' }
-            },
-                'success'
-            );
-            setFormItemInitData({ ...newItemDefaults });
-            refresh();
-        } catch (error) {
-            notify(error.message, 'error', 2000);
-        }
-    };
 
     const onDelete = async () => {
         try {
@@ -286,20 +259,72 @@ const Items = () => {
                 </Toolbar>
             </DataGrid>
 
-            <FormPopup title={'New Item'} visible={popupVisible} setVisible={changePopupVisibility} onSave={onSaveClick} height='250px'>
-                <CreateEditForm
-                    onDataChanged={onDataChanged}
-                    editing
-                    data={formItemInitData}
-                />
-            </FormPopup>
+            {
+                popupVisible && (
+                    <CreateEditPopup
+                        isOpen={popupVisible}
+                        onClose={changePopupVisibility}
+                        data={formItemInitData}
+                        makeRequest={makeRequest}
+                        refresh={refresh}
+                    />
+                )
+            }
 
             <DeletePopup title={'Delete Item'} visible={deletePopupVisible} setVisible={changeDeletePopupVisibility} onDelete={onDelete}>
-                    <div className='delete-content'>Are you sure you want to delete this record?</div>    
+                <div className='delete-content'>Are you sure you want to delete this record?</div>
             </DeletePopup>
 
         </React.Fragment>
     );
+
+}
+
+export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, ...props }) => {
+    const [formItemInitData, setFormItemInitData] = React.useState({ ...data });
+
+    let newItemData = { ...newItemDefaults };
+
+    React.useEffect(() => {
+        setFormItemInitData({ ...data });
+    }, [data]);
+
+    const onDataChanged = React.useCallback((data) => {
+        newItemData = data
+    });
+
+    const onSaveClick = async () => {
+        try {
+            let response;
+            if (newItemData.ItemID != 0) {
+                response = await makeRequest('Item/Update', put, newItemData);
+            } else {
+                response = await makeRequest('Item/Insert', post, newItemData);
+            }
+            notify({
+                message: response,
+                position: { at: 'bottom center', my: 'bottom center' }
+            },
+                'success'
+            );
+            setFormItemInitData({ ...newItemDefaults });
+            refresh();
+        } catch (error) {
+            notify(error.message, 'error', 2000);
+        }
+    };
+
+    return (
+
+        <FormPopup title={'New Item'} visible={isOpen} setVisible={onClose} onSave={onSaveClick} height='250'>
+            <CreateEditForm
+                onDataChanged={onDataChanged}
+                editing
+                data={formItemInitData}
+                {...props}
+            />
+        </FormPopup>
+    )
 
 }
 
