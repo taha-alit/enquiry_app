@@ -1,4 +1,5 @@
 import React from 'react';
+import './appointments.scss'
 import 'devextreme/data/odata/store';
 import DataGrid, {
     Column,
@@ -6,38 +7,52 @@ import DataGrid, {
     Paging,
     FilterRow,
     Lookup,
-    ColumnChooser,
-    SearchPanel,
-    Editing,
-    Export,
     Toolbar,
     Item,
-    RequiredRule,
-    ValidationRule,
-    Popup,
-    Form
+    Button as GridButton
 } from 'devextreme-react/data-grid';
-import { deleteById, get, getById, post, put, useApi } from '../../helpers/useApi';
+import { deleteById, get, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
 import { Workbook } from 'exceljs';
 import { saveAs } from 'file-saver-es';
-import { exportDataGrid } from 'devextreme/excel_exporter';
 import DataSource from 'devextreme/data/data_source';
+import { Button } from 'devextreme-react/button';
+import Form, { GroupItem, ColCountByScreen, SimpleItem } from 'devextreme-react/form';
+import { getSizeQualifier } from '../../utils/media-query'
+import 'devextreme-react/text-area';
+import { FormDateBox } from '../../components/utils/form-datebox'
+import { FormPopup } from '../../components/utils/form-popup';
+import { DeletePopup } from '../../components/utils/delete-popup';
+import { FormTextbox } from '../../components/utils/form-textbox';
+import SelectBox, { Button as SelectButton } from 'devextreme-react/select-box';
+import TextArea from 'devextreme-react/text-area';
+import { TextBox } from 'devextreme-react/text-box';
+import { exportDataGrid } from 'devextreme/pdf_exporter';
+import { exportDataGrid as exportDataGridXSLX } from 'devextreme/excel_exporter';
+import Validator, { RequiredRule } from 'devextreme-react/validator';
+
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 const phonePattern = /^[6-9]\d{9}$/;
 
 const Appointments = () => {
 
     const { makeRequest, loading, error, resetError } = useApi();
-    const dataGridRef = React.useRef();
+    const gridRef = React.useRef();
 
     const [doctors, setDoctors] = React.useState([]);
     const [states, setStates] = React.useState([]);
     const [cities, setCities] = React.useState([]);
     const [specialities, setSpecialities] = React.useState([]);
-    const [popupTitle, setPopupTitle] = React.useState('Create');
+    const [popupVisible, setPopupVisible] = React.useState(false);
+    const [deletePopupVisible, setDeletePopupVisible] = React.useState(false);
+    const [formAppointmentInitData, setFormAppointmentInitData] = React.useState({ ...newAppointmentDefaults });
+    const [deleteKey, setDeleteKey] = React.useState(null);
 
-    const [dataSource, setDataSource] = React.useState(new DataSource({
+    let newAppointmentData = { ...newAppointmentDefaults };
+
+    const dataSource = React.useMemo(() => new DataSource({
         key: 'AppointmentID',
         async load() {
             try {
@@ -46,37 +61,8 @@ const Appointments = () => {
             } catch (error) {
                 notify(error.message, 'error', 2000);
             }
-        },
-        async insert(values) {
-            values.FullName = `${values.FirstName} ${values.LastName || ''}`;
-            try {
-                const response = await makeRequest('Patient/Insert', post, values);
-                notify(response, 'success', 2000);
-            } catch (error) {
-                notify(error.message, 'error', 2000);
-            }
-        },
-        async update(key, values) {
-            try {
-                const patientDetail = await makeRequest(`Patient/GetById/${key}`, getById);
-                if (patientDetail) {
-                    values = { ...patientDetail, ...values };
-                    const response = await makeRequest('Patient/Update', put, values);
-                    notify(response, 'success', 2000);
-                }
-            } catch (error) {
-                notify(error.message, 'error', 2000);
-            }
-        },
-        async remove(key) {
-            try {
-                const response = await makeRequest(`Patient/Delete/${key}`, deleteById);
-                notify(response, 'success', 2000);
-            } catch (error) {
-                notify(error.message, 'error', 2000);
-            }
         }
-    }));
+    }), [])
 
     React.useEffect(() => {
         (async function () {
@@ -130,11 +116,44 @@ const Appointments = () => {
         }())
     }, []);
 
-    const onExporting = (e) => {
+    const changePopupVisibility = React.useCallback((isVisible) => {
+        setFormAppointmentInitData({ ...newAppointmentDefaults });
+        setPopupVisible(isVisible);
+    }, []);
+
+    const changeDeletePopupVisibility = React.useCallback((isVisible) => {
+        setDeleteKey(null);
+        setDeletePopupVisible(isVisible);
+    }, []);
+
+    const onDataChanged = React.useCallback((data) => {
+        newAppointmentData = data
+    });
+
+    const refresh = () => {
+        gridRef.current.instance().refresh();
+    }
+
+    const showColumnChooser = () => {
+        gridRef.current?.instance().showColumnChooser();
+    };
+
+    const exportToPDF = () => {
+        const doc = new jsPDF();
+        exportDataGrid({
+            jsPDFDocument: doc,
+            component: gridRef.current?.instance(),
+        }).then(() => {
+            doc.save('Appointments.pdf');
+        });
+    };
+
+    const exportToXSLX = () => {
         const workbook = new Workbook();
         const worksheet = workbook.addWorksheet('Main sheet');
-        exportDataGrid({
-            component: e.component,
+
+        exportDataGridXSLX({
+            component: gridRef.current?.instance(),
             worksheet,
             autoFilterEnabled: true,
         }).then(() => {
@@ -143,52 +162,76 @@ const Appointments = () => {
             });
         });
     };
-    
+
+    const search = (e) => {
+        gridRef.current?.instance().searchByText(e.component.option('text') ?? '');
+    };
+
+    const onAddAppointmentClick = React.useCallback(() => {
+        setFormAppointmentInitData({ ...newAppointmentDefaults });
+        setPopupVisible(true);
+    });
+
+    const onEditAppointmentClick = (evt) => {
+        setFormAppointmentInitData({ ...evt.row.data });
+        setPopupVisible(true);
+    }
+
+    const onDeleteAppointmentClick = (evt) => {
+        setDeleteKey(evt.row.data.AppointmentID);
+        setDeletePopupVisible(true);
+    }
+
+    const onSaveClick = async () => {
+        newAppointmentData.FullName = `${newAppointmentData.FirstName} ${newAppointmentData.LastName || ''}`;
+        try {
+            let response;
+            if (newAppointmentData.AppointmentID != 0) {
+                response = await makeRequest('Patient/Update', put, newAppointmentData);
+            } else {
+                response = await makeRequest('Patient/Insert', post, newAppointmentData);
+            }
+            notify({
+                message: response,
+                position: { at: 'bottom center', my: 'bottom center' }
+            },
+                'success'
+            );
+            setFormAppointmentInitData({ ...newAppointmentDefaults });
+            refresh();
+        } catch (error) {
+            notify(error.message, 'error', 2000);
+        }
+    };
+
+    const onDelete = async () => {
+        try {
+            const response = await makeRequest(`Patient/Delete/${deleteKey}`, deleteById);
+            notify(response, 'success', 2000);
+            refresh();
+            setDeleteKey(null);
+        } catch (error) {
+            notify(error.message, 'error', 2000);
+        }
+    }
+
     return (
         <React.Fragment>
-            <h2 className={'content-block'}>Appointments</h2>
 
             <DataGrid
                 className={'dx-card wide-card'}
                 dataSource={dataSource}
-                ref={dataGridRef}
+                ref={gridRef}
                 showBorders
                 defaultFocusedRowIndex={0}
                 columnAutoWidth
                 columnHidingEnabled
                 allowColumnReordering
                 allowColumnResizing
-                onExporting={onExporting}
-                onEditingStart={() => setPopupTitle('Edit')}
-                onInitNewRow={() => setPopupTitle('Create')}
             >
                 <Paging defaultPageSize={10} />
                 <Pager showPageSizeSelector={true} showInfo={true} />
                 <FilterRow visible={true} />
-                <SearchPanel visible={true} width={250} />
-                <Editing
-                    mode="popup"
-                    allowUpdating={true}
-                    allowDeleting={true}
-                    allowAdding={true}
-                >
-                    <Popup title={`${popupTitle} Patient`} showTitle width={'50%'} height={'auto'} />
-                    <Form>
-                        <Item dataField='AppointmentDateTime' />
-                        <Item dataField='FirstName' />
-                        <Item dataField='LastName' />
-                        <Item dataField='DOB' />
-                        <Item dataField='Gender' />
-                        <Item dataField='MobileNo' />
-                        <Item dataField='MaritalStatus' />
-                        <Item dataField='Address' />
-                        <Item dataField='StateID' />
-                        <Item dataField='CityID' />
-                        <Item dataField='ReasonForAppointment' />
-                        <Item dataField='DoctorID' />
-                        <Item dataField='SpecialityID' />
-                    </Form>
-                </Editing>
                 <Column
                     dataField={'AppointmentID'}
                     caption={'App No'}
@@ -201,24 +244,6 @@ const Appointments = () => {
                     caption={'Appt Date & Time'}
                     dataType={'datetime'}
                     hidingPriority={3}
-                >
-                    <RequiredRule />
-                </Column>
-                <Column
-                    dataField={'FirstName'}
-                    width={190}
-                    caption={'Patient First Name'}
-                    hidingPriority={8}
-                    visible={false}
-                >
-                    <RequiredRule />
-                </Column>
-                <Column
-                    dataField={'LastName'}
-                    width={190}
-                    caption={'Patient Last Name'}
-                    hidingPriority={8}
-                    visible={false}
                 />
                 <Column
                     dataField={'FullName'}
@@ -226,24 +251,20 @@ const Appointments = () => {
                     caption={'Patient Name'}
                     hidingPriority={8}
                     allowEditing={false}
-                >
-                    <RequiredRule />
-                </Column>
+                />
                 <Column
                     dataField={'DOB'}
                     caption={'DOB'}
                     dataType={'date'}
                     hidingPriority={4}
-                >
-                    <RequiredRule />
-                </Column>
+                />
                 <Column
                     dataField={'Gender'}
                     caption={'Gender'}
                     hidingPriority={5}
                 >
                     <Lookup
-                        dataSource={gender}
+                        dataSource={GENDER}
                         valueExpr={'value'}
                         displayExpr={'name'}
                     />
@@ -252,111 +273,387 @@ const Appointments = () => {
                     dataField={'MobileNo'}
                     caption={'Mobile'}
                     hidingPriority={6}
-                >
-                    <ValidationRule
-                        message='The phone must have a correct Indian phone formating'
-                        type='pattern'
-                        pattern={phonePattern}
-                    />
-                </Column>
-                <Column
-                    dataField={'MaritalStatus'}
-                    caption={'Marital Status'}
-                    hidingPriority={5}
-                    visible={false}
-                >
-                    <Lookup
-                        dataSource={maritialStatus}
-                        valueExpr={'value'}
-                        displayExpr={'name'}
-                    />
-                </Column>
+                />
                 <Column
                     dataField={'Address'}
                     caption={'Address'}
                     hidingPriority={6}
                 />
                 <Column
-                    dataField={'StateID'}
-                    caption={'State'}
-                    hidingPriority={5}
-                    visible={false}
-                >
-                    <Lookup
-                        dataSource={states}
-                        valueExpr={'StateID'}
-                        displayExpr={'StateName'}
-                    />
-                    <RequiredRule />
-                </Column>
-                <Column
-                    dataField={'CityID'}
-                    caption={'City'}
-                    hidingPriority={5}
-                    visible={false}
-                >
-                    <Lookup
-                        dataSource={cities}
-                        valueExpr={'CityID'}
-                        displayExpr={'CityName'}
-                    />
-                    <RequiredRule />
-                </Column>
-                <Column
                     dataField={'ReasonForAppointment'}
                     caption={'Reason For Appointment'}
                     hidingPriority={0}
                 />
                 <Column
-                    dataField={'DoctorID'}
-                    caption={'Doctor'}
-                    hidingPriority={5}
-                    visible={false}
+                    caption={''}
+                    hidingPriority={8}
+                    type='buttons'
+                    width={'auto'}
                 >
-                    <Lookup
-                        dataSource={doctors}
-                        valueExpr={'DoctorID'}
-                        displayExpr={'DoctorName'}
+                    <GridButton
+                        icon='edit'
+                        onClick={onEditAppointmentClick}
                     />
-                    <RequiredRule />
-                </Column>
-                <Column
-                    dataField={'SpecialityID'}
-                    caption={'Speciality'}
-                    hidingPriority={5}
-                    visible={false}
-                >
-                    <Lookup
-                        dataSource={specialities}
-                        valueExpr={'SpecialityID'}
-                        displayExpr={'SpecialityName'}
+                    <GridButton
+                        icon='trash'
+                        onClick={onDeleteAppointmentClick}
                     />
-                    <RequiredRule />
                 </Column>
-
-                <ColumnChooser enabled />
-
-                <Export enabled allowExportSelectedData />
                 <Toolbar>
-                    <Item name="addRowButton" showText="always" />
-                    <Item name="exportButton" />
-                    <Item name="columnChooserButton" />
-                    <Item name="searchPanel" />
+                    <Item location='before'>
+                        <span className='toolbar-header'>Appointments</span>
+                    </Item>
+                    <Item
+                        location='after'
+                        widget='dxButton'
+                        locateInMenu='auto'
+                    >
+                        <Button
+                            text='Add New'
+                            icon='plus'
+                            stylingMode='contained'
+                            hint='Add New Appointment'
+                            className='add_btn'
+                            onClick={onAddAppointmentClick}
+                        />
+                    </Item>
+                    <Item
+                        location='after'
+                        widget='dxButton'
+                        locateInMenu='auto'
+                    >
+                        <Button
+                            text=''
+                            icon='refresh'
+                            stylingMode='text'
+                            showText='inMenu'
+                            onClick={refresh}
+                        />
+                    </Item>
+                    <Item
+                        location='after'
+                        widget='dxButton'
+                        showText='inMenu'
+                        locateInMenu='auto'
+                    >
+                        <Button
+                            icon='columnchooser'
+                            text='Column Chooser'
+                            stylingMode='text'
+                            onClick={showColumnChooser}
+                        />
+                    </Item>
+                    <Item location='after' locateInMenu='auto'>
+                        <div className='separator' />
+                    </Item>
+                    <Item
+                        location='after'
+                        widget='dxButton'
+                        showText='inMenu'
+                        locateInMenu='auto'
+                    >
+                        <Button
+                            icon='exportpdf'
+                            text='Export To PDF'
+                            stylingMode='text'
+                            onClick={exportToPDF}
+                        />
+                    </Item>
+                    <Item
+                        location='after'
+                        widget='dxButton'
+                        showText='inMenu'
+                        locateInMenu='auto'
+                    >
+                        <Button
+                            icon='exportxlsx'
+                            text='Export To XSLX'
+                            stylingMode='text'
+                            onClick={exportToXSLX}
+                        />
+                    </Item>
+                    <Item
+                        location='after'
+                        widget='dxTextBox'
+                        locateInMenu='auto'
+                    >
+                        <TextBox
+                            mode='search'
+                            placeholder='Search'
+                            onInput={search}
+                        />
+                    </Item>
                 </Toolbar>
             </DataGrid>
+
+            <FormPopup title={'New Appointment'} visible={popupVisible} setVisible={changePopupVisibility} onSave={onSaveClick}>
+                <CreateEditForm
+                    onDataChanged={onDataChanged}
+                    editing
+                    data={formAppointmentInitData}
+                    states={states}
+                    cities={cities}
+                    specialities={specialities}
+                    doctors={doctors}
+                />
+            </FormPopup>
+
+            <DeletePopup title={'Delete Appointment'} visible={deletePopupVisible} setVisible={changeDeletePopupVisibility} onDelete={onDelete} width='25%'>
+                    <div className='delete-content'>Are you sure you want to delete this record?</div>    
+            </DeletePopup>
+
         </React.Fragment>
     );
 
 }
 
-const gender = [
+const CreateEditForm = ({ data, onDataChanged, editing, states, cities, specialities, doctors }) => {
+
+    const selectBoxRef = React.useRef();
+    const [formData, setFormData] = React.useState({ ...data });
+
+    const addDoctorButtonOption = React.useMemo(() => ({
+        icon: 'plus',
+        stylingMode: 'text',
+        onClick: () => {
+
+        }
+    }), []);
+
+    const selectboxdropbuttonOption = React.useMemo(() => ({
+        icon: "spindown",
+        stylingMode: "text",
+        onClick: (e) => {
+            var selectBoxInstance = selectBoxRef.current?.instance();
+            var isOpened = selectBoxInstance.option("opened");
+            if (isOpened) {
+                selectBoxInstance.close();
+            } else {
+                selectBoxInstance.open();
+                selectBoxInstance.focus();
+            }
+        },
+    }), []);
+
+    React.useEffect(() => {
+        setFormData({ ...data });
+    }, [data]);
+
+    const updateField = (field) => (value) => {
+        const newData = { ...formData, [field]: value };
+        onDataChanged(newData);
+        setFormData(newData);
+    }
+
+    return (
+        <React.Fragment>
+            <Form screenByWidth={getSizeQualifier}>
+                <GroupItem>
+                    <ColCountByScreen xs={1} sm={1} md={2} lg={2} />
+                    <SimpleItem>
+                        <FormDateBox
+                            type={'datetime'}
+                            value={formData.AppointmentDateTime ? new Date(formData.AppointmentDateTime) : null}
+                            readOnly={!editing}
+                            name='AppointmentDateTime'
+                            label='Appointment Date Time'
+                            onValueChange={updateField('AppointmentDateTime')}
+                        />
+                    </SimpleItem>
+                    <SimpleItem>
+                        <FormTextbox
+                            label='First Name'
+                            value={formData.FirstName}
+                            isEditing={!editing}
+                            onValueChange={updateField('FirstName')}
+                        />
+                    </SimpleItem>
+                    <SimpleItem>
+                        <FormTextbox
+                            label='Last Name'
+                            value={formData.LastName}
+                            isEditing={!editing}
+                            onValueChange={updateField('LastName')}
+                        />
+                    </SimpleItem>
+                    <SimpleItem>
+                        <FormDateBox
+                            type={'date'}
+                            value={formData.DOB ? new Date(formData.DOB) : null}
+                            readOnly={!editing}
+                            name='DOB'
+                            label='DOB'
+                            onValueChange={updateField('DOB')}
+                        />
+                    </SimpleItem>
+                    <SimpleItem>
+                        <SelectBox
+                            label='Gender'
+                            value={formData.Gender}
+                            dataSource={GENDER}
+                            displayExpr={'name'}
+                            valueExpr={'value'}
+                            readOnly={!editing}
+                            stylingMode='outlined'
+                            onValueChange={updateField('Gender')}
+                        >
+                            <Validator>
+                                <RequiredRule />
+                            </Validator>
+                        </SelectBox>
+                    </SimpleItem>
+                    <SimpleItem>
+                        <FormTextbox
+                            value={formData.MobileNo}
+                            isEditing={!editing}
+                            onValueChange={updateField('MobileNo')}
+                            icon='tel'
+                            label='Mobile'
+                            mask='+1(000)000-0000'
+                        />
+                    </SimpleItem>
+                    <SimpleItem>
+                        <SelectBox
+                            label='MaritalStatus'
+                            value={formData.MaritalStatus}
+                            dataSource={MARTIAL_STATUS}
+                            displayExpr={'name'}
+                            valueExpr={'value'}
+                            readOnly={!editing}
+                            stylingMode='outlined'
+                            onValueChange={updateField('MaritalStatus')}
+                        >
+                            <Validator>
+                                <RequiredRule />
+                            </Validator>
+                        </SelectBox>
+                    </SimpleItem>
+                    <SimpleItem></SimpleItem>
+                    <SimpleItem colSpan={2}>
+                        <TextArea
+                            label='Address'
+                            readOnly={!editing}
+                            value={formData.Address}
+                            stylingMode='outlined'
+                            onValueChange={updateField('Address')}
+                        />
+                    </SimpleItem>
+                    <SimpleItem>
+                        <SelectBox
+                            label='State'
+                            value={formData.StateID}
+                            dataSource={states}
+                            displayExpr={'StateName'}
+                            valueExpr={'StateID'}
+                            readOnly={!editing}
+                            stylingMode='outlined'
+                            onValueChange={updateField('StateID')}
+                        >
+                            <Validator>
+                                <RequiredRule />
+                            </Validator>
+                        </SelectBox>
+                    </SimpleItem>
+                    <SimpleItem>
+                        <SelectBox
+                            label='City'
+                            value={formData.CityID}
+                            dataSource={cities}
+                            displayExpr={'CityName'}
+                            valueExpr={'CityID'}
+                            readOnly={!editing}
+                            stylingMode='outlined'
+                            onValueChange={updateField('CityID')}
+                        >
+                            <Validator>
+                                <RequiredRule />
+                            </Validator>
+                        </SelectBox>
+                    </SimpleItem>
+                    <SimpleItem>
+                        <SelectBox
+                            label='Speciality'
+                            value={formData.SpecialityID}
+                            dataSource={specialities}
+                            displayExpr={'SpecialityName'}
+                            valueExpr={'SpecialityID'}
+                            readOnly={!editing}
+                            stylingMode='outlined'
+                            onValueChange={updateField('SpecialityID')}
+                        >
+                            <Validator>
+                                <RequiredRule />
+                            </Validator>
+                        </SelectBox>
+                    </SimpleItem>
+                    <SimpleItem>
+                        <SelectBox
+                            ref={selectBoxRef}
+                            label='Doctor'
+                            value={formData.DoctorID}
+                            dataSource={doctors}
+                            displayExpr={'DoctorName'}
+                            valueExpr={'DoctorID'}
+                            readOnly={!editing}
+                            stylingMode='outlined'
+                            onValueChange={updateField('DoctorID')}
+                        >
+                            <SelectButton
+                                name='add_doctor'
+                                location='after'
+                                options={addDoctorButtonOption}
+                            />
+                            <SelectButton
+                                name='open_dropdown'
+                                location='after'
+                                options={selectboxdropbuttonOption}
+                            />
+                            <Validator>
+                                <RequiredRule />
+                            </Validator>
+                        </SelectBox>
+                    </SimpleItem>
+                    <SimpleItem colSpan={2}>
+                        <TextArea
+                            label='Reason For Appointment'
+                            readOnly={!editing}
+                            value={formData.ReasonForAppointment}
+                            stylingMode='outlined'
+                            onValueChange={updateField('ReasonForAppointment')}
+                        />
+                    </SimpleItem>
+                </GroupItem>
+            </Form>
+        </React.Fragment>
+    );
+}
+
+const newAppointmentDefaults = {
+    AppointmentID: 0,
+    AppointmentDateTime: '',
+    FirstName: '',
+    LastName: '',
+    FullName: '',
+    DOB: '',
+    Gender: 0,
+    MobileNo: '',
+    MaritalStatus: 0,
+    Address: '',
+    StateID: null,
+    CityID: null,
+    ReasonForAppointment: '',
+    SpecialityID: null,
+    DoctorID: null
+}
+
+const GENDER = [
     { name: 'Male', value: 0 },
     { name: 'Female', value: 1 },
     { name: 'Transgender', value: 2 },
     { name: 'DoNotDisclose', value: 3 }
 ];
 
-const maritialStatus = [
+const MARTIAL_STATUS = [
     { name: 'Single', value: 0 },
     { name: 'Married', value: 1 },
     { name: 'Widowed', value: 2 },

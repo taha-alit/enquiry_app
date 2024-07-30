@@ -1,0 +1,24 @@
+// @use "../../../variables.scss" as *;
+
+.form-popup .dx-toolbar-center {
+  width: 100%;
+}
+
+.form-popup-buttons-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--popup-toolbar-item-spacing);
+  .dx-button-default {
+    margin-left: 10px;
+    background-color: #555557;
+    :hover {
+      background-color: #555557;
+    }
+  };
+  &.flex-buttons {
+    .dx-button {
+      flex: 1;
+    }
+  }
+}

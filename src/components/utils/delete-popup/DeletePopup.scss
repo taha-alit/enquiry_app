@@ -1,0 +1,25 @@
+// @use "../../../variables.scss" as *;
+
+.delete-popup .dx-toolbar-center {
+    width: 100%;
+  }
+  
+  .delete-popup-buttons-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--popup-toolbar-item-spacing);
+    .dx-button-default {
+      margin-left: 10px;
+      background-color: #f00d0d;
+      :hover {
+        background-color: #f00d0d;
+      }
+    };
+    &.flex-buttons {
+      .dx-button {
+        flex: 1;
+      }
+    }
+  }
+  
