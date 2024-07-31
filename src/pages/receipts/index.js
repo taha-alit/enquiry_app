@@ -37,6 +37,8 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { newDoctorDefaults, CreateEditPopup as DoctorCreateEditPopup } from '../doctors';
 import { newSpecialityDefaults, CreateEditPopup as SpecialityCreateEditPopup } from '../specialities';
+import { NumberBox } from 'devextreme-react/number-box';
+import { FormNumberbox } from '../../components/utils/form-numberbox';
 
 const phonePattern = /^[6-9]\d{9}$/;
 
@@ -690,24 +692,26 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, makeRequ
                         />
                     </SimpleItem>
                     <SimpleItem>
-                        <FormTextbox
+                        <FormNumberbox
                             label='Total Amount'
                             value={formData.GrossAmount}
-                            isEditing={!editing}
+                            isEditing={true}
                             onValueChange={updateField('GrossAmount')}
+                            format={'$ #,##0.##'}
                         />
-                        <FormTextbox
+                        <FormNumberbox
                             label='Discount'
                             value={formData.Discount}
-                            isEditing={!editing}
+                            isEditing={true}
                             onValueChange={updateField('Discount')}
+                            format={'$ #,##0.##'}
                         />
-
-                        <FormTextbox
+                        <FormNumberbox
                             label='Net Amount'
                             value={formData.NetAmount}
-                            isEditing={!editing}
+                            isEditing={true}
                             onValueChange={updateField('NetAmount')}
+                            format={'$ #,##0.##'}
                         />
                     </SimpleItem>
                 </GroupItem>
