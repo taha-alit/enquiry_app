@@ -289,13 +289,8 @@ const Specialities = () => {
 }
 
 export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, ...props }) => {
-    const [formSpecialityInitData, setFormSpecialityInitData] = React.useState({ ...data });
 
-    let newSpecialityData = { ...newSpecialityDefaults };
-
-    React.useEffect(() => {
-        setFormSpecialityInitData({ ...data });
-    }, [data]);
+    let newSpecialityData = { ...data };
 
     const onDataChanged = React.useCallback((data) => {
         newSpecialityData = data
@@ -315,7 +310,6 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
             },
                 'success'
             );
-            setFormSpecialityInitData({ ...newSpecialityDefaults });
             refresh();
         } catch (error) {
             notify(error.message, 'error', 2000);
@@ -328,7 +322,7 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
             <CreateEditForm
                 onDataChanged={onDataChanged}
                 editing
-                data={formSpecialityInitData}
+                data={data}
                 {...props}
             />
         </FormPopup>

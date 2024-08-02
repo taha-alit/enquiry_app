@@ -281,13 +281,8 @@ const Items = () => {
 }
 
 export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, ...props }) => {
-    const [formItemInitData, setFormItemInitData] = React.useState({ ...data });
 
-    let newItemData = { ...newItemDefaults };
-
-    React.useEffect(() => {
-        setFormItemInitData({ ...data });
-    }, [data]);
+    let newItemData = { ...data };
 
     const onDataChanged = React.useCallback((data) => {
         newItemData = data
@@ -307,7 +302,6 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
             },
                 'success'
             );
-            setFormItemInitData({ ...newItemDefaults });
             refresh();
         } catch (error) {
             notify(error.message, 'error', 2000);
@@ -320,7 +314,7 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
             <CreateEditForm
                 onDataChanged={onDataChanged}
                 editing
-                data={formItemInitData}
+                data={data}
                 {...props}
             />
         </FormPopup>

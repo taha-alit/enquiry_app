@@ -320,13 +320,8 @@ const Doctors = () => {
 }
 
 export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, ...props }) => {
-    const [formDoctorInitData, setFormDoctorInitData] = React.useState({ ...data });
 
-    let newDoctorData = { ...newDoctorDefaults };
-
-    React.useEffect(() => {
-        setFormDoctorInitData({ ...data });
-    }, [data]);
+    let newDoctorData = { ...data };
 
     const onDataChanged = React.useCallback((data) => {
         newDoctorData = data
@@ -346,7 +341,6 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
             },
                 'success'
             );
-            setFormDoctorInitData({ ...newDoctorDefaults });
             refresh();
         } catch (error) {
             notify(error.message, 'error', 2000);
@@ -359,7 +353,7 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
             <CreateEditForm
                 onDataChanged={onDataChanged}
                 editing
-                data={formDoctorInitData}
+                data={data}
                 makeRequest={makeRequest}
                 {...props}
             />

@@ -389,14 +389,8 @@ const Appointments = () => {
 }
 
 export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, ...props }) => {
-    const [formAppointmentInitData, setFormAppointmentInitData] = React.useState({ ...data });
 
-
-    let newAppointmentData = { ...newAppointmentDefaults };
-
-    React.useEffect(() => {
-        setFormAppointmentInitData({ ...data });
-    }, [data]);
+    let newAppointmentData = { ...data };
 
     const onDataChanged = React.useCallback((data) => {
         newAppointmentData = data
@@ -417,7 +411,6 @@ export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, .
             },
                 'success'
             );
-            setFormAppointmentInitData({ ...newAppointmentDefaults });
             refresh();
         } catch (error) {
             notify(error.message, 'error', 2000);
@@ -430,7 +423,7 @@ export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, .
             <CreateEditForm
                 onDataChanged={onDataChanged}
                 editing
-                data={formAppointmentInitData}
+                data={data}
                 makeRequest={makeRequest}
                 {...props}
             />

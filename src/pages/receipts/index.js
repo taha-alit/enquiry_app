@@ -168,7 +168,6 @@ const Receipts = () => {
     const onEditReceiptClick = async (evt) => {
         try {
             const response = await makeRequest(`Receipt/GetDetailsByReceiptId/${evt.row.data.ReceiptID}`, get);
-            console.log(response);
             receiptDetailItems = response.map(item => ({
                 ...item,
                 GrossAmount: item.Rate * item.Quantity,
@@ -382,13 +381,8 @@ const Receipts = () => {
 let receiptDetailItems = [];
 
 export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, ...props }) => {
-    const [formReceiptInitData, setFormReceiptInitData] = React.useState({ ...data });
 
-    let newReceiptData = { ...newReceiptDefaults };
-
-    React.useEffect(() => {
-        setFormReceiptInitData({ ...data });
-    }, [data]);
+    let newReceiptData = { ...data };
 
     const onDataChanged = React.useCallback((data) => {
         newReceiptData = data
@@ -417,7 +411,6 @@ export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, .
             },
                 'success'
             );
-            setFormReceiptInitData({ ...newReceiptDefaults });
             refresh();
         } catch (error) {
             notify(error.message, 'error', 2000);
@@ -430,7 +423,7 @@ export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, .
             <CreateEditForm
                 onDataChanged={onDataChanged}
                 editing
-                data={formReceiptInitData}
+                data={data}
                 makeRequest={makeRequest}
                 {...props}
             />
@@ -501,6 +494,13 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
         newData.Amount = newData.GrossAmount - newData.Discount;
     }
 
+    const updateReceiptAmount = () => {
+        const grossAmount = receiptDetailItems.reduce((accum, item) => accum += item.GrossAmount, 0);
+        const netAmount = receiptDetailItems.reduce((accum, item) => accum += item.Amount, 0);
+        const discount = receiptDetailItems.reduce((accum, item) => accum += item.Discount, 0);
+        setFormData({ ...formData, GrossAmount: grossAmount, Discount: discount, NetAmount: netAmount });
+    }
+
     const receiptDetailDataSource = React.useMemo(() => new DataSource({
         key: 'ReceiptDetailID',
         async load() {
@@ -508,19 +508,18 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
         },
         async insert(values) {
             receiptDetailItems.push({ ReceiptDetailID: receiptDetailItems.length + 1, ...values });
-            const grossAmount = receiptDetailItems.reduce((accum, item) => accum += item.GrossAmount, 0);
-            const netAmount = receiptDetailItems.reduce((accum, item) => accum += item.Amount, 0);
-            const discount = receiptDetailItems.reduce((accum, item) => accum += item.Discount, 0);
-            setFormData({ ...formData, GrossAmount: grossAmount, Discount: discount, NetAmount: netAmount });
+            updateReceiptAmount();
         },
         async update(key, values) {
             let item = receiptDetailItems.find(item => item.ReceiptDetailID == key);
             let idx = receiptDetailItems.findIndex(item => item.ReceiptDetailID == key);
             receiptDetailItems[idx] = { ...item, ...values };
+            updateReceiptAmount();
         },
         async remove(key) {
             let idx = receiptDetailItems.findIndex(item => item.ReceiptDetailID == key);
             receiptDetailItems.splice(idx, 1);
+            updateReceiptAmount();
         }
     }), [formData]);
 
@@ -592,7 +591,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                             }}
                         >
                             <Editing
-                                mode="row"
+                                mode="cell"
                                 allowUpdating={true}
                                 allowDeleting={true}
                                 allowAdding={true}
