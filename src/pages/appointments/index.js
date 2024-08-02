@@ -391,6 +391,7 @@ const Appointments = () => {
 export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, ...props }) => {
     const [formAppointmentInitData, setFormAppointmentInitData] = React.useState({ ...data });
 
+
     let newAppointmentData = { ...newAppointmentDefaults };
 
     React.useEffect(() => {
@@ -446,6 +447,30 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
 
     const [doctorPopupVisible, setDoctorPopupVisible] = React.useState(false);
     const [specialityPopupVisible, setSpecialityPopupVisible] = React.useState(false);
+
+    const specialityDidMountRef = React.useRef(false);
+    const doctorDidMountRef = React.useRef(false);
+
+    React.useEffect(() => {
+        if (doctors) {
+            if (doctorDidMountRef.current) {
+                updateField('DoctorID')(doctors[doctors.length - 1].DoctorID)
+            } else {
+                doctorDidMountRef.current = true;
+            }
+        }
+    }, [doctors]);
+
+    React.useEffect(() => {
+        if (specialities) {
+            if (specialityDidMountRef.current) {
+                updateField('SpecialityID')(specialities[specialities.length - 1].SpecialityID)
+            } else {
+                specialityDidMountRef.current = true;
+            }
+        }
+    }, [specialities]);
+
 
     const addDoctorButtonOption = React.useMemo(() => ({
         icon: 'plus',

@@ -294,7 +294,6 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
     let newSpecialityData = { ...newSpecialityDefaults };
 
     React.useEffect(() => {
-        console.log(data)
         setFormSpecialityInitData({ ...data });
     }, [data]);
 

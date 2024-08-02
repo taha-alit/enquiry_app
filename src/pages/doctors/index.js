@@ -373,6 +373,17 @@ const CreateEditForm = ({ data, onDataChanged, editing, specialities, makeReques
     const [formData, setFormData] = React.useState({ ...data });
 
     const [specialityPopupVisible, setSpecialityPopupVisible] = React.useState(false);
+    const specialityDidMountRef = React.useRef(false);
+
+    React.useEffect(() => {
+        if (specialities) {
+            if (specialityDidMountRef.current) {
+                updateField('SpecialityID')(specialities[specialities.length - 1].SpecialityID)
+            } else {
+                specialityDidMountRef.current = true;
+            }
+        }
+    }, [specialities]);
 
     const addSpecialityButtonOption = React.useMemo(() => ({
         icon: 'plus',

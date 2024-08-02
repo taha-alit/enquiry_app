@@ -48,6 +48,7 @@ const Receipts = () => {
     const gridRef = React.useRef();
 
     const [doctors, setDoctors] = React.useState([]);
+    const [specialities, setSpecialities] = React.useState([]);
     const [items, setItems] = React.useState([]);
     const [popupVisible, setPopupVisible] = React.useState(false);
     const [deletePopupVisible, setDeletePopupVisible] = React.useState(false);
@@ -69,6 +70,7 @@ const Receipts = () => {
     React.useEffect(() => {
         fetchDoctors();
         fetchItems();
+        fetchSpeciality();
     }, []);
 
     const fetchDoctors = async () => {
@@ -91,10 +93,21 @@ const Receipts = () => {
             notify(err.message, 'error', 2000);
         }
     }
+    const fetchSpeciality = async () => {
+        try {
+            resetError();
+            const specialitiesData = await makeRequest('Speciality/GetList', get, {});
+            setSpecialities(specialitiesData);
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
+        }
+    }
 
     const refreshDoctors = () => fetchDoctors();
     const refreshItems = () => fetchItems();
-
+    const refreshSpeciality = () => fetchSpeciality();
+    
     const changePopupVisibility = React.useCallback((isVisible) => {
         setFormReceiptInitData({ ...newReceiptDefaults });
         setPopupVisible(isVisible);
@@ -350,7 +363,9 @@ const Receipts = () => {
                         refresh={refresh}
                         doctors={doctors}
                         items={items}
+                        specialities={specialities}
                         refreshDoctors={refreshDoctors}
+                        refreshSpeciality={refreshSpeciality}
                     />
                 )
             }
@@ -424,13 +439,24 @@ export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, .
 
 }
 
-const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, makeRequest, refreshDoctors }) => {
+const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, specialities, makeRequest, refreshDoctors, refreshSpeciality }) => {
 
     const receiptDetailGridRef = React.useRef();
     const doctorSelectBoxRef = React.useRef();
     const [formData, setFormData] = React.useState({ ...data });
 
     const [doctorPopupVisible, setDoctorPopupVisible] = React.useState(false);
+    const doctorDidMountRef = React.useRef(false);
+
+    React.useEffect(() => {
+        if (doctors) {
+            if (doctorDidMountRef.current) {
+                updateField('DoctorID')(doctors[doctors.length - 1].DoctorID)
+            } else {
+                doctorDidMountRef.current = true;
+            }
+        }
+    }, [doctors]);
 
     const addDoctorButtonOption = React.useMemo(() => ({
         icon: 'plus',
@@ -725,6 +751,8 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, makeRequ
                         data={newDoctorDefaults}
                         makeRequest={makeRequest}
                         refresh={refreshDoctors}
+                        specialities={specialities}
+                        refreshSpeciality={refreshSpeciality}
                     />
                 )
             }
