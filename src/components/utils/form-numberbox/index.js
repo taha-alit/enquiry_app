@@ -1,7 +1,7 @@
 import React from 'react';
 
 import NumberBox, { Button as NumberBoxButton } from 'devextreme-react/number-box';
-import Validator, { RequiredRule } from 'devextreme-react/validator';
+import Validator from 'devextreme-react/validator';
 import './FormNumberbox.scss';
 
 export const FormNumberbox = ({ value, label, isEditing, onValueChange, icon, format, children }) => {
@@ -27,7 +27,6 @@ export const FormNumberbox = ({ value, label, isEditing, onValueChange, icon, fo
         }} />
       }
       <Validator>
-        <RequiredRule />
         {children}
       </Validator>
     </NumberBox>

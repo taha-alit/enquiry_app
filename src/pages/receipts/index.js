@@ -11,7 +11,16 @@ import DataGrid, {
     Item,
     Button as GridButton,
     Editing,
-    ValidationRule
+    ValidationRule,
+    HeaderFilter,
+    Search,
+    ColumnChooserSearch,
+    ColumnChooser,
+    FilterBuilderPopup,
+    FilterPanel,
+    Scrolling,
+    Summary,
+    TotalItem
 } from 'devextreme-react/data-grid';
 import { deleteById, get, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
@@ -26,12 +35,13 @@ import { FormDateBox } from '../../components/utils/form-datebox'
 import { FormPopup } from '../../components/utils/form-popup';
 import { DeletePopup } from '../../components/utils/delete-popup';
 import { FormTextbox } from '../../components/utils/form-textbox';
-import SelectBox, { Button as SelectButton } from 'devextreme-react/select-box';
+import { FormSelectbox } from '../../components/utils/form-selectbox';
+import { Button as SelectButton } from 'devextreme-react/select-box';
 import TextArea from 'devextreme-react/text-area';
 import { TextBox } from 'devextreme-react/text-box';
 import { exportDataGrid } from 'devextreme/pdf_exporter';
 import { exportDataGrid as exportDataGridXSLX } from 'devextreme/excel_exporter';
-import Validator, { RequiredRule } from 'devextreme-react/validator';
+import Validator, { CustomRule, RequiredRule } from 'devextreme-react/validator';
 
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -107,7 +117,7 @@ const Receipts = () => {
     const refreshDoctors = () => fetchDoctors();
     const refreshItems = () => fetchItems();
     const refreshSpeciality = () => fetchSpeciality();
-    
+
     const changePopupVisibility = React.useCallback((isVisible) => {
         setFormReceiptInitData({ ...newReceiptDefaults });
         setPopupVisible(isVisible);
@@ -157,6 +167,7 @@ const Receipts = () => {
 
     const onAddReceiptClick = React.useCallback(async () => {
         try {
+            receiptDetailItems = [];
             const response = await makeRequest('Receipt/GenerateReceiptNo', get);
             setFormReceiptInitData({ ...newReceiptDefaults, ReceiptNo: parseInt(response), ReceiptDate: new Date() });
             setPopupVisible(true);
@@ -198,160 +209,216 @@ const Receipts = () => {
         }
     }
 
+    const netAmountCellRendered = (cell) => {
+        return `$${cell.value.toFixed(2)}`
+    }
+
+    const customizeNetAmountSummary = React.useCallback((e) => {
+        return `Total Amount: $${e.value.toFixed(2)}`;
+    }, []);
+
     return (
         <React.Fragment>
-
-            <DataGrid
-                className={'dx-card wide-card'}
-                dataSource={dataSource}
-                ref={gridRef}
-                showBorders
-                defaultFocusedRowIndex={0}
-                columnAutoWidth
-                columnHidingEnabled
-                allowColumnReordering
-                allowColumnResizing
-            >
-                <Paging defaultPageSize={10} />
-                <Pager showPageSizeSelector={true} showInfo={true} />
-                <FilterRow visible={true} />
-                <Column
-                    dataField={'ReceiptNo'}
-                    caption={'Receipt No'}
-                    hidingPriority={2}
-                    allowEditing={false}
-                    alignment='left'
-                />
-                <Column
-                    dataField={'ReceiptDate'}
-                    caption={'Receipt Data'}
-                    dataType={'datetime'}
-                    hidingPriority={3}
-                />
-                <Column
-                    dataField={'DoctorID'}
-                    caption={'Person Name'}
-                    hidingPriority={5}
+            <div className='list-section'>
+                <DataGrid
+                    className={'dx-card wide-card'}
+                    dataSource={dataSource}
+                    ref={gridRef}
+                    showBorders={true}
+                    showColumnLines={false}
+                    showRowLines={true}
+                    focusedRowEnabled={true}
+                    wordWrapEnabled={true}
+                    hoverStateEnabled={true}
+                    allowColumnReordering={true}
+                    allowColumnResizing={true}
+                    autoNavigateToFocusedRow={true}
+                    filterSyncEnabled={true}
+                    defaultFocusedRowIndex={0}
+                    columnAutoWidth
+                    columnHidingEnabled
+                    height={'100%'}
+                    width={"100%"}
+                    noDataText='No Record Found'
                 >
-                    <Lookup
-                        dataSource={doctors}
-                        valueExpr={'DoctorID'}
-                        displayExpr={'DoctorName'}
+                    <FilterBuilderPopup width={'25%'} height={'40%'} title='Apply FIlter' />
+                    <FilterPanel visible filterEnabled />
+                    <Scrolling mode='infinite' rowRenderingMode='virtual' preloadEnabled={true} useNative={true} />
+                    {/* <Paging defaultPageSize={10} /> */}
+                    <Pager
+                        visible
+                        // allowedPageSizes={allowedPageSizes}
+                        showInfo
+                        // showPageSizeSelector
+                        // showNavigationButtons
+                        infoText={`{2} Rows`}
+                    // displayMode='full'
                     />
-                </Column>
-                <Column
-                    dataField={'NetAmount'}
-                    width={190}
-                    caption={'Net Amount'}
-                    hidingPriority={8}
-                />
-                <Column
-                    dataField={'Remarks'}
-                    caption={'Remarks'}
-                    hidingPriority={6}
-                />
-                <Column
-                    caption={''}
-                    hidingPriority={8}
-                    type='buttons'
-                    width={'auto'}
-                >
-                    <GridButton
-                        icon='edit'
-                        onClick={onEditReceiptClick}
+                    <FilterRow visible />
+                    <Column
+                        dataField={'ReceiptNo'}
+                        caption={'Receipt No'}
+                        hidingPriority={2}
+                        allowEditing={false}
+                        alignment='left'
                     />
-                    <GridButton
-                        icon='trash'
-                        onClick={onDeleteReceiptClick}
+                    <Column
+                        dataField={'ReceiptDate'}
+                        caption={'Receipt Data'}
+                        dataType={'datetime'}
+                        hidingPriority={3}
                     />
-                </Column>
-                <Toolbar>
-                    <Item location='before'>
-                        <span className='toolbar-header'>Receipts</span>
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        locateInMenu='auto'
+                    <Column
+                        dataField={'DoctorID'}
+                        caption={'Person Name'}
+                        hidingPriority={5}
                     >
-                        <Button
-                            text='Add New'
-                            icon='plus'
-                            stylingMode='contained'
-                            hint='Add New Receipt'
-                            className='add_btn'
-                            onClick={onAddReceiptClick}
+                        <Lookup
+                            dataSource={doctors}
+                            valueExpr={'DoctorID'}
+                            displayExpr={'DoctorName'}
                         />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        locateInMenu='auto'
+                    </Column>
+                    <Column
+                        dataField={'NetAmount'}
+                        width={190}
+                        caption={'Net Amount'}
+                        hidingPriority={8}
+                        cellRender={netAmountCellRendered}
+                        alignment='left'
+                    />
+                    <Column
+                        dataField={'Remarks'}
+                        caption={'Remarks'}
+                        hidingPriority={6}
+                        alignment='left'
+                    />
+                    <Column
+                        caption={''}
+                        hidingPriority={8}
+                        type='buttons'
+                        width={'auto'}
+                        alignment='left'
                     >
-                        <Button
-                            text=''
-                            icon='refresh'
-                            stylingMode='text'
+                        <GridButton
+                            icon='edit'
+                            onClick={onEditReceiptClick}
+                            hint='Edit'
+                        />
+                        <GridButton
+                            icon='trash'
+                            onClick={onDeleteReceiptClick}
+                            hint='Delete'
+                        />
+                    </Column>
+                    <Summary>
+                        <TotalItem
+                            column='NetAmount'
+                            summaryType='sum'
+                            showInColumn='NetAmount'
+                            alignment='center'
+                            // displayFormat='Total Amount: ${0}'
+                            customizeText={customizeNetAmountSummary}
+                        />
+                    </Summary>
+                    <HeaderFilter visible={true}>
+                        <Search enabled={true} />
+                    </HeaderFilter>
+                    <ColumnChooser>
+                        <ColumnChooserSearch enabled />
+                    </ColumnChooser>
+                    <Toolbar>
+                        <Item location='before'>
+                            <span className='toolbar-header'>Receipts</span>
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                text='Add New'
+                                icon='plus'
+                                stylingMode='contained'
+                                hint='Add New Receipt'
+                                className='add_btn'
+                                onClick={onAddReceiptClick}
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                text=''
+                                icon='refresh'
+                                stylingMode='text'
+                                showText='inMenu'
+                                onClick={refresh}
+                                hint='Refresh'
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
                             showText='inMenu'
-                            onClick={refresh}
-                        />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        showText='inMenu'
-                        locateInMenu='auto'
-                    >
-                        <Button
-                            icon='columnchooser'
-                            text='Column Chooser'
-                            stylingMode='text'
-                            onClick={showColumnChooser}
-                        />
-                    </Item>
-                    <Item location='after' locateInMenu='auto'>
-                        <div className='separator' />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        showText='inMenu'
-                        locateInMenu='auto'
-                    >
-                        <Button
-                            icon='exportpdf'
-                            text='Export To PDF'
-                            stylingMode='text'
-                            onClick={exportToPDF}
-                        />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        showText='inMenu'
-                        locateInMenu='auto'
-                    >
-                        <Button
-                            icon='exportxlsx'
-                            text='Export To XSLX'
-                            stylingMode='text'
-                            onClick={exportToXSLX}
-                        />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxTextBox'
-                        locateInMenu='auto'
-                    >
-                        <TextBox
-                            mode='search'
-                            placeholder='Search'
-                            onInput={search}
-                        />
-                    </Item>
-                </Toolbar>
-            </DataGrid>
-
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                icon='columnchooser'
+                                text='Column Chooser'
+                                stylingMode='text'
+                                onClick={showColumnChooser}
+                                hint='Column Chooser'
+                            />
+                        </Item>
+                        <Item location='after' locateInMenu='auto'>
+                            <div className='separator' />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            showText='inMenu'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                icon='exportpdf'
+                                text='Export To PDF'
+                                stylingMode='text'
+                                onClick={exportToPDF}
+                                hint='Download PDF'
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            showText='inMenu'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                icon='exportxlsx'
+                                text='Export To XSLX'
+                                stylingMode='text'
+                                onClick={exportToXSLX}
+                                hint='Download XL'
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxTextBox'
+                            locateInMenu='auto'
+                        >
+                            <TextBox
+                                mode='search'
+                                placeholder='Search'
+                                onInput={search}
+                                width={300}
+                            />
+                        </Item>
+                    </Toolbar>
+                </DataGrid>
+            </div>
             {
                 popupVisible && (
                     <CreateEditPopup
@@ -498,7 +565,15 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
         const grossAmount = receiptDetailItems.reduce((accum, item) => accum += item.GrossAmount, 0);
         const netAmount = receiptDetailItems.reduce((accum, item) => accum += item.Amount, 0);
         const discount = receiptDetailItems.reduce((accum, item) => accum += item.Discount, 0);
-        setFormData({ ...formData, GrossAmount: grossAmount, Discount: discount, NetAmount: netAmount });
+        const updatedAmount = {
+            ...formData,
+            GrossAmount: grossAmount,
+            Discount: discount,
+            NetAmount: netAmount
+        };
+        onDataChanged(updatedAmount);
+        setFormData(updatedAmount);
+
     }
 
     const receiptDetailDataSource = React.useMemo(() => new DataSource({
@@ -547,7 +622,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                         />
                     </SimpleItem>
                     <SimpleItem colSpan={2}>
-                        <SelectBox
+                        <FormSelectbox
                             ref={doctorSelectBoxRef}
                             label='Person'
                             value={formData.DoctorID}
@@ -571,7 +646,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                             <Validator>
                                 <RequiredRule />
                             </Validator>
-                        </SelectBox>
+                        </FormSelectbox>
                     </SimpleItem>
                     <SimpleItem colSpan={2}>
                         <DataGrid
@@ -610,25 +685,13 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                                 dataField={'ItemID'}
                                 caption={'Item Name'}
                                 hidingPriority={5}
+                                alignment='left'
                             >
                                 <Lookup
                                     dataSource={items}
                                     valueExpr={'ItemID'}
                                     displayExpr={'ItemName'}
                                 />
-                                <RequiredRule />
-                            </Column>
-                            <Column
-                                dataField={'Rate'}
-                                caption={'Rate'}
-                                hidingPriority={6}
-                                width={100}
-                                dataType='number'
-                                setCellValue={(newData, value, currentRowData) => {
-                                    newData.Rate = value;
-                                    updateAmountCalculation(newData, { ...currentRowData, Rate: value });
-                                }}
-                            >
                                 <RequiredRule />
                             </Column>
                             <Column
@@ -641,6 +704,22 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                                     newData.Quantity = value;
                                     updateAmountCalculation(newData, { ...currentRowData, Quantity: value });
                                 }}
+                                alignment='left'
+                            >
+                                <RequiredRule />
+                            </Column>
+                            <Column
+                                dataField={'Rate'}
+                                caption={'Rate'}
+                                hidingPriority={6}
+                                width={100}
+                                dataType='number'
+                                setCellValue={(newData, value, currentRowData) => {
+                                    newData.Rate = value;
+                                    updateAmountCalculation(newData, { ...currentRowData, Rate: value });
+                                }}
+                                format={'$ #,##0.##'}
+                                alignment='left'
                             >
                                 <RequiredRule />
                             </Column>
@@ -650,6 +729,8 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                                 hidingPriority={6}
                                 dataType='number'
                                 allowEditing={false}
+                                format={'$ #,##0.##'}
+                                alignment='left'
                             />
                             <Column
                                 dataField={'DiscountPer'}
@@ -662,6 +743,8 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                                         updateAmountCalculation(newData, { ...currentRowData, DiscountPer: value });
                                     }
                                 }}
+                                format={"#0'%'"}
+                                alignment='left'
                             >
                                 <ValidationRule
                                     type="range"
@@ -675,6 +758,8 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                                 hidingPriority={6}
                                 dataType='number'
                                 allowEditing={false}
+                                format={'$ #,##0.##'}
+                                alignment='left'
                             />
                             <Column
                                 dataField={'Amount'}
@@ -682,6 +767,8 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                                 hidingPriority={6}
                                 dataType='number'
                                 allowEditing={false}
+                                format={'$ #,##0.##'}
+                                alignment='left'
                             />
                             <Toolbar>
                                 <Item
@@ -719,25 +806,36 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                     <SimpleItem>
                         <FormNumberbox
                             label='Total Amount'
-                            value={formData.GrossAmount}
+                            value={formData.GrossAmount || 0}
                             isEditing={true}
                             onValueChange={updateField('GrossAmount')}
                             format={'$ #,##0.##'}
-                        />
+                        >
+                            <CustomRule
+                                validationCallback={(e) => e.value > 0}
+                                message='Total Amount cannot be zero.'
+                            />
+                        </FormNumberbox>
                         <FormNumberbox
                             label='Discount'
-                            value={formData.Discount}
+                            value={formData.Discount || 0}
                             isEditing={true}
                             onValueChange={updateField('Discount')}
                             format={'$ #,##0.##'}
-                        />
+                        >
+                        </FormNumberbox>
                         <FormNumberbox
                             label='Net Amount'
                             value={formData.NetAmount}
                             isEditing={true}
                             onValueChange={updateField('NetAmount')}
                             format={'$ #,##0.##'}
-                        />
+                        >
+                            <CustomRule
+                                validationCallback={(e) => e.value > 0}
+                                message='Net Amount cannot be zero.'
+                            />
+                        </FormNumberbox>
                     </SimpleItem>
                 </GroupItem>
             </Form>

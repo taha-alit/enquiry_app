@@ -1,24 +1,236 @@
 @import "./themes/generated/variables.base.scss";
+@import "./utils/custom-additional-variables.scss";
 
-body {
-  font-family:
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    'Roboto',
-    'Oxygen',
-    'Ubuntu',
-    'Cantarell',
-    'Fira Sans',
-    'Droid Sans',
-    'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+// Font Sizes with default font family
+
+/* For  Regular */
+
+.font-regular-24 {
+  font-weight: 400;
+  font-size: 24px;
 }
 
+.font-regular-22 {
+  font-weight: 400;
+  font-size: 22px;
+}
+
+
+.font-regular-20 {
+  font-weight: 400;
+  font-size: 20px;
+}
+
+
+.font-regular-18 {
+  font-weight: 400;
+  font-size: 18px;
+}
+
+.font-regular-16 {
+  font-weight: 400;
+  font-size: 16px;
+}
+
+.font-regular-14 {
+  font-weight: 400;
+  font-size: 14px;
+}
+
+.font-regular-15 {
+  font-weight: 400;
+  font-size: 15px;
+}
+
+.font-regular-13 {
+  font-weight: 400;
+  font-size: 13px;
+}
+
+
+.font-regular-12 {
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.font-regular-11 {
+  font-weight: 400;
+  font-size: 11px;
+}
+
+.font-regular-10 {
+  font-weight: 400;
+  font-size: 11px;
+}
+
+/* For  Medium */
+.font-medium-24 {
+  font-weight: 500;
+  font-size: 24px;
+}
+.font-medium-22 {
+  font-weight: 500;
+  font-size: 22px;
+}
+.font-medium-20 {
+  font-weight: 500;
+  font-size: 20px;
+}
+
+
+.font-medium-18 {
+  font-weight: 500;
+  font-size: 18px;
+}
+
+.font-medium-16 {
+  font-weight: 500;
+  font-size: 16px;
+}
+
+.font-medium-14 {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.font-medium-13 {
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.font-medium-12 {
+  font-weight: 500;
+  font-size: 12px;
+}
+
+/* For SemiBold Font*/
+
+.font-semiBold-36 {
+  font-weight: 600;
+  font-size: 36px;
+}
+
+.font-semiBold-32 {
+  font-weight: 600;
+  font-size: 32px;
+}
+
+.font-semiBold-28 {
+  font-weight: 600;
+  font-size: 28px;
+}
+
+.font-semiBold-26 {
+  font-weight: 600;
+  font-size: 26px;
+}
+
+.font-semiBold-24 {
+  font-weight: 600;
+  font-size: 24px;
+}
+
+.font-semiBold-23 {
+  font-weight: 600;
+  font-size: 23px;
+}
+
+.font-semiBold-20 {
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.font-semiBold-18 {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.font-semiBold-16 {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.font-semiBold-15 {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+
+.font-semiBold-14 {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.font-semiBold-13 {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.font-semiBold-12 {
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.font-semiBold-11 {
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.font-semiBold-10 {
+  font-weight: 600;
+  font-size: 10px;
+}
+
+/* For Bold Font*/
+.font-bold-14 {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.font-bold-16 {
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.font-bold-18 {
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.font-bold-20 {
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.font-bold-24 {
+  font-weight: bold;
+  font-size: 24px;
+}
+
+.font-bold-26 {
+  font-weight: bold;
+  font-size: 26px;
+}
+
+.font-bold-28 {
+  font-weight: bold;
+  font-size: 28px;
+}
+
+.font-bold-32 {
+  font-weight: bold;
+  font-size: 32px;
+}
+
+.font-bold-36 {
+  font-weight: bold;
+  font-size: 36px;
+}
+
+//End Font Sizes with default font family
+
 .app {
-  background-color: darken($base-bg, 5.00);
+  background-color: #fff;
   display: flex;
   height: 100%;
   width: 100%;
@@ -34,7 +246,7 @@ body {
     }
   }
 
-  .container {
+  .devcontainer {
     height: 100%;
     flex-direction: column;
     display: flex;
@@ -43,28 +255,24 @@ body {
   .layout-body {
     flex: 1;
     min-height: 0;
+    // border-left: 1px solid $base-border-color;
   }
 
-  .content-block {
-    margin-left: 40px;
-    margin-right: 40px;
-    margin-top: 20px;
-  }
+
 }
 
 .side-nav-outer-toolbar .dx-drawer {
   height: calc(100% - 56px)
 }
 
-.screen-x-small .content-block {
-  margin-left: 20px;
-  margin-right: 20px;
-}
-
 .responsive-paddings {
   padding: 20px;
 
   .screen-large & {
+    padding: 40px;
+  }
+
+  .screen-ex-large & {
     padding: 40px;
   }
 }
@@ -77,11 +285,10 @@ body {
   border-left: 0;
 }
 
-.with-footer > .dx-scrollable-wrapper >
-.dx-scrollable-container > .dx-scrollable-content {
+.with-footer>.dx-scrollable-wrapper>.dx-scrollable-container>.dx-scrollable-content {
   height: 100%;
 
-  & > .dx-scrollview-content {
+  &>.dx-scrollview-content {
     display: flex;
     flex-direction: column;
     min-height: 100%;
@@ -90,7 +297,8 @@ body {
 
 $side-panel-min-width: 60px;
 
-html, body {
+html,
+body {
   margin: 0px;
   min-height: 100%;
   height: 100%;
@@ -102,4 +310,499 @@ html, body {
 
 * {
   box-sizing: border-box;
+}
+
+.dx-pager .dx-pages {
+  float: left;
+
+  .dx-page {
+    // display: none;
+    opacity: 0 !important;
+  }
+}
+
+.ForValidationAstrikMark .dx-label span::after {
+  content: " *";
+  color: $base-danger;
+}
+
+
+// common class for datagrid Column chooser, it is not work inside List_DataGrid due to .dx-overlay-content class
+td.dx-command-edit.dx-command-edit-with-icons.dx-focused{
+  background-color: #E6F2F2 !important;
+}
+.dx-datagrid-column-chooser.dx-datagrid-column-chooser-mode-drag .dx-popup-content {
+  padding: 0px 0px 18px !important;
+}
+
+.dx-datagrid-column-chooser.dx-datagrid-column-chooser-mode-drag .dx-treeview-node-container:first-child>.dx-treeview-node-is-leaf {
+  padding: 0px 18px;
+}
+
+.dx-datagrid-column-chooser.dx-datagrid-column-chooser-mode-drag .dx-popup-content .dx-treeview-search {
+  margin-left: 18px;
+  margin-right: 18px;
+}
+
+.dx-datagrid-column-chooser .dx-overlay-content .dx-popup-title {
+  padding-top: 3px;
+  padding-bottom: 3px;
+  margin-bottom: 8px;
+  background-color: $base-light-accent;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.056), 0 1px 2px rgba(0, 0, 0, 0.09);
+}
+
+.List_DataGrid {
+  padding: 5px;
+  background-color: white;
+
+  .dx-datagrid-table {
+    border-collapse: unset !important;
+    border-spacing: 0;
+    margin: 0;
+  }
+
+  .dx-datagrid-content .dx-datagrid-table .dx-row .dx-command-select {
+    padding: 0;
+    width: 35px !important;
+    min-width: 35px !important;
+    max-width: 35px !important;
+  }
+
+  .dx-datagrid-content .dx-datagrid-table .dx-row .dx-command-edit.dx-command-edit-with-icons {
+    vertical-align: middle !important;
+    padding: 0px;
+  }
+
+  .dx-datagrid-rowsview .dx-row-focused.dx-data-row .dx-command-edit .dx-link:focus {
+    background-color: transparent !important;
+  }
+
+  .dx-datagrid-search-panel {
+    margin: 0px !important;
+  }
+
+  .dx-header-row {
+    background-color: $base-accent !important;
+    color: white;
+
+  }
+
+  .dx-datagrid .dx-datagrid-table .dx-header-row>td.dx-col-fixed {
+    background-color: $base-accent;
+  }
+
+
+  .dx-datagrid-header-panel .dx-toolbar {
+    margin-bottom: 0;
+  }
+
+  .dx-toolbar {
+    padding-top: 0px !important;
+    padding-bottom: 5px !important;
+  }
+
+  .dx-datagrid .dx-header-filter-empty {
+    color: rgb(255, 255, 255);
+  }
+
+
+
+  // .dx-datagrid .dx-column-lines>td:first-child {
+  //   border-right: none !important;
+  // }
+
+  // .dx-datagrid .dx-column-lines>td {
+  //   border-left: none !important;
+  // }
+}
+
+.dx-drawer-panel-content {
+  border-right: 1px solid lightgray;
+}
+
+.CustomPopup {
+  .dx-popup-content {
+    padding: 0px !important;
+  }
+
+  .dx-popup-title {
+    padding: 0px !important;
+    border-bottom: none !important;
+  }
+}
+.PopupIndex{
+  z-index: 1501 !important;
+}
+
+.list-section-two {
+  height: calc(60vh - 37px);
+  // height: calc(50vh - 37px);
+
+  .screen-medium & {
+    height: calc(60vh - 120px) !important;
+  }
+
+  .screen-small & {
+    height: calc(62vh - 120px) !important;
+  }
+
+  .screen-x-small & {
+    height: calc(57vh - 120px) !important;
+  }
+
+  .screen-xx-small & {
+    height: calc(60vh - 120px) !important;
+  }
+
+  .screen-ex-small & {
+    height: calc(60vh - 120px) !important;
+  }
+}
+
+.list-section {
+  height: calc(100vh - 57px);
+
+  .screen-small & {
+    height: calc(100vh - 120px) !important;
+  }
+
+  .screen-x-small & {
+    height: calc(100vh - 120px) !important;
+  }
+
+  .screen-xx-small & {
+    height: calc(100vh - 120px) !important;
+  }
+
+  .screen-ex-small & {
+    height: calc(100vh - 120px) !important;
+  }
+}
+
+.base-accent-text {
+  color: $base-accent;
+}
+
+.customize-checkbox {
+  .dx-checkbox-text {
+    color: rgb(146, 146, 146);
+  }
+}
+
+.custom-editor-btn {
+  .dx-button-content {
+    padding: 7px 18px;
+  }
+}
+
+.view-panel-title {
+  color: $base-accent !important;
+  @extend .font-semiBold-16;
+}
+
+.view-label {
+  @extend .font-regular-14;
+  font-style: italic;
+}
+
+.view-text-value {
+  @extend .font-semiBold-15;
+}
+
+.footer-vakency {
+  color: $base-accent;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.editor-label {
+  @extend.font-regular-14;
+  color: $base-gray;
+
+}
+
+.CustomizeHtmlEditor {
+
+  // .dx-toolbar .dx-toolbar-items-container {
+  //     height: 40px;
+  // }
+  .dx-button-mode-contained {
+    background-color: transparent !important;
+    border: none !important;
+    color: #333;
+  }
+
+  .dx-htmleditor-toolbar-format.dx-size-format {
+    width: 100px;
+    // height: 35px;
+  }
+
+  .dx-texteditor.dx-editor-filled .dx-placeholder::before,
+  .dx-texteditor.dx-editor-filled .dx-texteditor-input,
+  .dx-texteditor.dx-editor-outlined .dx-placeholder::before,
+  .dx-texteditor.dx-editor-outlined .dx-texteditor-input {
+    padding: 6px 16px 6px !important;
+    font-size: 14px;
+  }
+
+  .dx-htmleditor-toolbar-wrapper {
+    padding: 0px 4px !important;
+    background-color: #f3f7f9;
+  }
+
+  .dx-toolbar-button.dx-toolbar-text-auto-hide .dx-button {
+    min-width: 30px;
+  }
+
+}
+
+.header-component .dx-toolbar {
+  background-color: #f4f6f6 !important;
+}
+
+.dx-custom-icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 22px;
+  height: 22px;
+  background-size: contain !important;
+  background-position: 0 0;
+  padding: 0;
+  font-size: 22px;
+  text-align: center;
+  line-height: 22px;
+}
+
+.editor-sub-header {
+  @extend .font-semiBold-16;
+}
+
+.vertical-line {
+  color: $base-gray;
+  line-height: 20px;
+  font-size: 20px;
+  background-size: 24px 24px;
+  font-weight: 100;
+}
+
+.vertical-line2{
+  line-height: 20px;
+  font-size: 28px;
+  background-size: 24px 24px;
+  font-weight: 100;
+  color: $base-gray;
+}
+
+
+
+.Italic-text {
+  color: $base-accent;
+}
+
+.default-rounded-btn {
+  border-radius: 100%;
+
+  .dx-button-content {
+    padding: 4px;
+  }
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.pointer-link {
+  cursor: pointer;
+}
+
+.star-filled {
+  color: $base-dark-yellow;
+}
+
+.star-empty {
+  color: $base-gray;
+}
+
+
+.gauge-percent-value {
+  position: absolute;
+  top: 26px;
+  left: 26px;
+  background-color: $base-light-accent;
+  @extend .font-medium-18;
+}
+
+.gauge-percent-value-sm {
+  position: absolute;
+  top: 16px;
+  left: 15px;
+  background-color: $base-light-accent;
+  @extend .font-medium-12;
+}
+
+.text-gray{
+  color: $base-gray;
+}
+
+.italic-labels{
+  @extend .font-regular-12;
+  font-style: italic;
+  color: $base-gray;
+}
+
+.alert-icon{
+  @extend .font-semiBold-26;
+  color: $base-dark-yellow;
+}
+
+
+.verticle-line-small{
+  font-weight: 100;
+  color: $base-light-gray;
+}
+
+.dx-popup-title.dx-toolbar {
+ background-color: $base-light-accent;
+}
+
+.btnReload {
+  background: $base-accent!important;
+  border-radius: 7px !important;
+}
+
+.btnCancel{
+  border-radius: 7px !important;
+}
+
+// start to remove eye icon from edge browser 
+
+input::-ms-reveal,
+input::-ms-clear {
+  display: none !important;
+}
+
+
+// end to remove eye icon from edge browser 
+
+// start to remove autofill color
+
+input:-webkit-autofill  {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important; 
+}
+
+input:-webkit-autofill:focus  {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+}
+
+input:-internal-autofill-selected {
+  background-color: white !important; 
+}
+
+.dx-texteditor-input:-webkit-autofill  {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important; 
+}
+
+.dx-texteditor-input:-webkit-autofill:focus  {
+  -webkit-box-shadow: 0 0 0 1000px white inset !important;
+}
+.dx-texteditor-input:-internal-autofill-selected {
+  background-color: white !important; 
+}
+
+// end to remove autofill color 
+
+.skeleton-View {
+  background-color: #e7eaec;
+  background-image: linear-gradient(90deg, #e7eaec, #eff2f3, #e7eaec);
+  background-size: 100px 100%;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+  display: inline-block;
+  line-height: 1;
+  animation: skeleton-animation 1.5s ease-in-out infinite;
+}
+
+.list-toolbar-skeleton_common{
+  background-color: #e7eaec;
+  background-image: linear-gradient(90deg, #e7eaec, #eff2f3, #e7eaec);
+  background-size: 100px 100%;
+  background-repeat: no-repeat;
+  border-radius: 4px;
+  display: inline-block;
+  line-height: 1;
+  width: 440px;
+  height: 30px;
+  margin: 0px;
+  animation: skeleton-animation 1.5s ease-in-out infinite;
+}
+
+.skeleton-toolbar-height_common{
+  height: 40px;
+}
+.Skeleton-popup-footer{
+  height: 30px;
+  width: 150px;
+}
+
+.dx-calendar {  
+  width: 250px;  
+  min-width: 250px;  
+  height: 250px;  
+  min-height: 250px;  
+  margin: 15px!important;  
+}  
+ .dx-timeview {  
+  height: 200px;  
+  width: 230px;  
+  margin: 0!important;  
+}  
+ .dx-timeview-clock {  
+  min-height: 150px;  
+  min-width: 150px;  
+  background-size: 150px;  
+}  
+//  .dx-popup-bottom.dx-toolbar {  
+//   padding: 0;  
+// }  
+
+.dx-scrollable-scroll{
+  padding: 0 !important;
+}
+
+// Start Hide Async Rule Validation Icons
+
+.dx-valid .dx-texteditor-input-container:after {
+  content: none !important;
+}
+
+.dx-pending-indicator.dx-loadindicator.dx-widget{
+  display: none !important;
+}
+
+.dx-next-button{
+  display: none !important;
+}
+
+/* Start For DataGrid List Scroll Bar WebKit browsers (Chrome, Safari) */
+.dx-datagrid ::-webkit-scrollbar {
+  width: 6px; /* Reduce width */
+  height: 6px; /* Reduce height */
+}
+
+.dx-datagrid ::-webkit-scrollbar-thumb {
+  background-color: #d4d0d0; /* Customize thumb color */
+  border-radius: 10px; /* Customize thumb roundness */
+}
+
+/* For Firefox */
+.dx-datagrid {
+  scrollbar-width: thin; /* Thin scrollbar */
+  scrollbar-color: #e2e0e0; /* Customize thumb and track color */
+}
+
+
+// End For DataGrid List Scroll Bar
+.dx-datagrid-headers{
+  padding: 0px !important;
 }

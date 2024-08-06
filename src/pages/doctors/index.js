@@ -9,7 +9,14 @@ import DataGrid, {
     Lookup,
     Toolbar,
     Item,
-    Button as GridButton
+    Button as GridButton,
+    HeaderFilter,
+    Search,
+    ColumnChooserSearch,
+    ColumnChooser,
+    FilterBuilderPopup,
+    FilterPanel,
+    Scrolling
 } from 'devextreme-react/data-grid';
 import { deleteById, get, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
@@ -24,7 +31,8 @@ import { FormDateBox } from '../../components/utils/form-datebox'
 import { FormPopup } from '../../components/utils/form-popup';
 import { DeletePopup } from '../../components/utils/delete-popup';
 import { FormTextbox } from '../../components/utils/form-textbox';
-import SelectBox, { Button as SelectButton } from 'devextreme-react/select-box';
+import { FormSelectbox } from '../../components/utils/form-selectbox';
+import { Button as SelectButton } from 'devextreme-react/select-box';
 import TextArea from 'devextreme-react/text-area';
 import { TextBox } from 'devextreme-react/text-box';
 import { exportDataGrid } from 'devextreme/pdf_exporter';
@@ -60,7 +68,7 @@ const Doctors = () => {
 
     React.useEffect(() => {
         fetchSpeciality();
-    },[]);
+    }, []);
 
     const fetchSpeciality = async () => {
         try {
@@ -149,153 +157,185 @@ const Doctors = () => {
 
     return (
         <React.Fragment>
-
-            <DataGrid
-                className={'dx-card wide-card'}
-                dataSource={dataSource}
-                ref={gridRef}
-                showBorders
-                defaultFocusedRowIndex={0}
-                columnAutoWidth
-                columnHidingEnabled
-                allowColumnReordering
-                allowColumnResizing
-            >
-                <Paging defaultPageSize={10} />
-                <Pager showPageSizeSelector={true} showInfo={true} />
-                <FilterRow visible={true} />
-                <Column
-                    dataField={'DoctorID'}
-                    width={190}
-                    caption={'Doc No'}
-                    hidingPriority={2}
-                    allowEditing={false}
-                    alignment='left'
-                />
-                <Column
-                    dataField={'DoctorName'}
-                    caption={'Doctor Name'}
-                    hidingPriority={8}
-                    allowEditing={false}
-                />
-                <Column
-                    dataField={'SpecialityID'}
-                    caption={'Speciality'}
-                    hidingPriority={5}
+            <div className='list-section'>
+                <DataGrid
+                    className={'dx-card wide-card'}
+                    dataSource={dataSource}
+                    ref={gridRef}
+                    showBorders={true}
+                    showColumnLines={false}
+                    showRowLines={true}
+                    focusedRowEnabled={true}
+                    wordWrapEnabled={true}
+                    hoverStateEnabled={true}
+                    allowColumnReordering={true}
+                    allowColumnResizing={true}
+                    autoNavigateToFocusedRow={true}
+                    filterSyncEnabled={true}
+                    defaultFocusedRowIndex={0}
+                    columnAutoWidth
+                    columnHidingEnabled
+                    height={'100%'}
+                    width={"100%"}
+                    noDataText='No Record Found'
                 >
-                    <Lookup
-                        dataSource={specialities}
-                        valueExpr={'SpecialityID'}
-                        displayExpr={'SpecialityName'}
+                    <FilterBuilderPopup width={'25%'} height={'40%'} title='Apply FIlter' />
+                    <FilterPanel visible filterEnabled />
+                    <Scrolling mode='infinite' rowRenderingMode='virtual' preloadEnabled={true} useNative={true} />
+                    {/* <Paging defaultPageSize={10} /> */}
+                    <Pager
+                        visible
+                        // allowedPageSizes={allowedPageSizes}
+                        showInfo
+                        // showPageSizeSelector
+                        // showNavigationButtons
+                        infoText={`{2} Rows`}
+                    // displayMode='full'
                     />
-                </Column>
-                <Column
-                    dataField={'Education'}
-                    caption={'Education'}
-                    hidingPriority={6}
-                />
-                <Column
-                    caption={''}
-                    hidingPriority={8}
-                    type='buttons'
-                    width={'auto'}
-                >
-                    <GridButton
-                        icon='edit'
-                        onClick={onEditDoctorClick}
+                    <FilterRow visible />
+                    <Column
+                        dataField={'DoctorID'}
+                        width={190}
+                        caption={'Doc No'}
+                        hidingPriority={2}
+                        allowEditing={false}
+                        alignment='left'
                     />
-                    <GridButton
-                        icon='trash'
-                        onClick={onDeleteDoctorClick}
+                    <Column
+                        dataField={'DoctorName'}
+                        caption={'Doctor Name'}
+                        hidingPriority={8}
+                        allowEditing={false}
+                        alignment='left'
                     />
-                </Column>
-                <Toolbar>
-                    <Item location='before'>
-                        <span className='toolbar-header'>Doctors</span>
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        locateInMenu='auto'
+                    <Column
+                        dataField={'SpecialityID'}
+                        caption={'Speciality'}
+                        hidingPriority={5}
+                        alignment='left'
                     >
-                        <Button
-                            text='Add New'
-                            icon='plus'
-                            stylingMode='contained'
-                            hint='Add New Doctor'
-                            className='add_btn'
-                            onClick={onAddDoctorClick}
+                        <Lookup
+                            dataSource={specialities}
+                            valueExpr={'SpecialityID'}
+                            displayExpr={'SpecialityName'}
                         />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        locateInMenu='auto'
+                    </Column>
+                    <Column
+                        dataField={'Education'}
+                        caption={'Education'}
+                        hidingPriority={6}
+                        alignment='left'
+                    />
+                    <Column
+                        caption={''}
+                        hidingPriority={8}
+                        type='buttons'
+                        width={'auto'}
+                        alignment='left'
                     >
-                        <Button
-                            text=''
-                            icon='refresh'
-                            stylingMode='text'
+                        <GridButton
+                            icon='edit'
+                            onClick={onEditDoctorClick}
+                            hint='Edit'
+                        />
+                        <GridButton
+                            icon='trash'
+                            onClick={onDeleteDoctorClick}
+                            hint='Delete'
+                        />
+                    </Column>
+                    <Toolbar>
+                        <Item location='before'>
+                            <span className='toolbar-header'>Doctors</span>
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                text='Add New'
+                                icon='plus'
+                                stylingMode='contained'
+                                hint='Add New Doctor'
+                                className='add_btn'
+                                onClick={onAddDoctorClick}
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                text=''
+                                icon='refresh'
+                                stylingMode='text'
+                                showText='inMenu'
+                                onClick={refresh}
+                                hint='Refresh'
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
                             showText='inMenu'
-                            onClick={refresh}
-                        />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        showText='inMenu'
-                        locateInMenu='auto'
-                    >
-                        <Button
-                            icon='columnchooser'
-                            text='Column Chooser'
-                            stylingMode='text'
-                            onClick={showColumnChooser}
-                        />
-                    </Item>
-                    <Item location='after' locateInMenu='auto'>
-                        <div className='separator' />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        showText='inMenu'
-                        locateInMenu='auto'
-                    >
-                        <Button
-                            icon='exportpdf'
-                            text='Export To PDF'
-                            stylingMode='text'
-                            onClick={exportToPDF}
-                        />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        showText='inMenu'
-                        locateInMenu='auto'
-                    >
-                        <Button
-                            icon='exportxlsx'
-                            text='Export To XSLX'
-                            stylingMode='text'
-                            onClick={exportToXSLX}
-                        />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxTextBox'
-                        locateInMenu='auto'
-                    >
-                        <TextBox
-                            mode='search'
-                            placeholder='Search'
-                            onInput={search}
-                        />
-                    </Item>
-                </Toolbar>
-            </DataGrid>
-
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                icon='columnchooser'
+                                text='Column Chooser'
+                                stylingMode='text'
+                                onClick={showColumnChooser}
+                                hint='Column Chooser'
+                            />
+                        </Item>
+                        <Item location='after' locateInMenu='auto'>
+                            <div className='separator' />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            showText='inMenu'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                icon='exportpdf'
+                                text='Export To PDF'
+                                stylingMode='text'
+                                onClick={exportToPDF}
+                                hint='Download PDF'
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            showText='inMenu'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                icon='exportxlsx'
+                                text='Export To XSLX'
+                                stylingMode='text'
+                                onClick={exportToXSLX}
+                                hint='Download XL'
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxTextBox'
+                            locateInMenu='auto'
+                        >
+                            <TextBox
+                                mode='search'
+                                placeholder='Search'
+                                onInput={search}
+                                width={300}
+                            />
+                        </Item>
+                    </Toolbar>
+                </DataGrid>
+            </div>
             {
                 popupVisible && (
                     <CreateEditPopup
@@ -439,7 +479,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, specialities, makeReques
                     </SimpleItem>
 
                     <SimpleItem>
-                        <SelectBox
+                        <FormSelectbox
                             ref={specialitySelectBoxRef}
                             label='Speciality'
                             value={formData.SpecialityID}
@@ -463,7 +503,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, specialities, makeReques
                             <Validator>
                                 <RequiredRule />
                             </Validator>
-                        </SelectBox>
+                        </FormSelectbox>
                     </SimpleItem>
                 </GroupItem>
             </Form>

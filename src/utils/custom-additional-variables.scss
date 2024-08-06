@@ -1,0 +1,28 @@
+$base-danger:rgb(223, 63, 63);
+$base-light-accent: #f4f6f6;
+$base-light-gray: #d5d5d5;
+$base-gray: #9c9c9c;
+$base-blue: #2267b2; 
+$base-dark-blue:rgb(34, 64, 124);
+$base-dark-yellow: #f6c259;
+$base-light-yellow: #f0ea94;
+$base-white: #ffffff;
+$base-picture-bg: rgba(183, 183, 183, 0.1);
+$base-secondary-accent:#39879833;
+$base-navy-blue:#20386d;
+$base-black:#000000;
+$base-light-teal: #6dbfcc;
+$base-green: green;
+$base-dark-accent: #185a6c;
+$base-white:#fff;
+$secondary-light-gray:rgb(230, 230, 230);
+$base-success:rgb(20, 181, 20);
+
+:export{
+    shortListedGaugeColor: #00AB66;
+    underProcessGaugeColor: #6ba292;
+    hiredGaugeColor: #ffdc7c;
+    onBoardingGaugeColor: #2267b2;
+    rejectedGaugeColor: #dd614a;
+    dropoutGaugeColor: #ff9b71;
+}

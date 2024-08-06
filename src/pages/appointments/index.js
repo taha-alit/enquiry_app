@@ -9,7 +9,14 @@ import DataGrid, {
     Lookup,
     Toolbar,
     Item,
-    Button as GridButton
+    Button as GridButton,
+    HeaderFilter,
+    Search,
+    ColumnChooserSearch,
+    ColumnChooser,
+    FilterBuilderPopup,
+    FilterPanel,
+    Scrolling
 } from 'devextreme-react/data-grid';
 import { deleteById, get, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
@@ -24,7 +31,7 @@ import { FormDateBox } from '../../components/utils/form-datebox'
 import { FormPopup } from '../../components/utils/form-popup';
 import { DeletePopup } from '../../components/utils/delete-popup';
 import { FormTextbox } from '../../components/utils/form-textbox';
-import SelectBox, { Button as SelectButton } from 'devextreme-react/select-box';
+import { Button as SelectButton } from 'devextreme-react/select-box';
 import TextArea from 'devextreme-react/text-area';
 import { TextBox } from 'devextreme-react/text-box';
 import { exportDataGrid } from 'devextreme/pdf_exporter';
@@ -35,8 +42,11 @@ import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import { newDoctorDefaults, CreateEditPopup as DoctorCreateEditPopup } from '../doctors';
 import { newSpecialityDefaults, CreateEditPopup as SpecialityCreateEditPopup } from '../specialities';
+import { FormSelectbox } from '../../components/utils/form-selectbox';
+import { FilterBuilder } from 'devextreme-react';
 
 const phonePattern = /^[6-9]\d{9}$/;
+const allowedPageSizes = [5, 10, 'all'];
 
 const Appointments = () => {
 
@@ -193,174 +203,217 @@ const Appointments = () => {
     return (
         <React.Fragment>
 
-            <DataGrid
-                className={'dx-card wide-card'}
-                dataSource={dataSource}
-                ref={gridRef}
-                showBorders
-                defaultFocusedRowIndex={0}
-                columnAutoWidth
-                columnHidingEnabled
-                allowColumnReordering
-                allowColumnResizing
-            >
-                <Paging defaultPageSize={10} />
-                <Pager showPageSizeSelector={true} showInfo={true} />
-                <FilterRow visible={true} />
-                <Column
-                    dataField={'AppointmentID'}
-                    caption={'App No'}
-                    hidingPriority={2}
-                    allowEditing={false}
-                    alignment='left'
-                />
-                <Column
-                    dataField={'AppointmentDateTime'}
-                    caption={'Appt Date & Time'}
-                    dataType={'datetime'}
-                    hidingPriority={3}
-                />
-                <Column
-                    dataField={'FullName'}
-                    width={190}
-                    caption={'Patient Name'}
-                    hidingPriority={8}
-                    allowEditing={false}
-                />
-                <Column
-                    dataField={'DOB'}
-                    caption={'DOB'}
-                    dataType={'date'}
-                    hidingPriority={4}
-                />
-                <Column
-                    dataField={'Gender'}
-                    caption={'Gender'}
-                    hidingPriority={5}
+            <div className='list-section'>
+                <DataGrid
+                    className={'dx-card wide-card'}
+                    dataSource={dataSource}
+                    ref={gridRef}
+                    showBorders={true}
+                    showColumnLines={false}
+                    showRowLines={true}
+                    focusedRowEnabled={true}
+                    wordWrapEnabled={true}
+                    hoverStateEnabled={true}
+                    allowColumnReordering={true}
+                    allowColumnResizing={true}
+                    autoNavigateToFocusedRow={true}
+                    filterSyncEnabled={true}
+                    defaultFocusedRowIndex={0}
+                    columnAutoWidth
+                    columnHidingEnabled
+                    height={'100%'}
+                    width={"100%"}
+                    noDataText='No Record Found'
                 >
-                    <Lookup
-                        dataSource={GENDER}
-                        valueExpr={'value'}
-                        displayExpr={'name'}
+                    <FilterBuilderPopup width={'25%'} height={'40%'} title='Apply FIlter' />
+                    <FilterPanel visible filterEnabled />
+                    <Scrolling mode='infinite' rowRenderingMode='virtual' preloadEnabled={true} useNative={true} />
+                    {/* <Paging defaultPageSize={10} /> */}
+                    <Pager
+                        visible
+                        // allowedPageSizes={allowedPageSizes}
+                        showInfo
+                        // showPageSizeSelector
+                        // showNavigationButtons
+                        infoText={`{2} Rows`}
+                    // displayMode='full'
                     />
-                </Column>
-                <Column
-                    dataField={'MobileNo'}
-                    caption={'Mobile'}
-                    hidingPriority={6}
-                />
-                <Column
-                    dataField={'Address'}
-                    caption={'Address'}
-                    hidingPriority={6}
-                />
-                <Column
-                    dataField={'ReasonForAppointment'}
-                    caption={'Reason For Appointment'}
-                    hidingPriority={0}
-                />
-                <Column
-                    caption={''}
-                    hidingPriority={8}
-                    type='buttons'
-                    width={'auto'}
-                >
-                    <GridButton
-                        icon='edit'
-                        onClick={onEditAppointmentClick}
+                    <FilterRow visible />
+                    <Column
+                        dataField={'AppointmentID'}
+                        caption={'App No'}
+                        hidingPriority={2}
+                        allowEditing={false}
+                        alignment='left'
                     />
-                    <GridButton
-                        icon='trash'
-                        onClick={onDeleteAppointmentClick}
+                    <Column
+                        dataField={'AppointmentDateTime'}
+                        caption={'Appt Date & Time'}
+                        dataType={'datetime'}
+                        hidingPriority={3}
+                        alignment='left'
                     />
-                </Column>
-                <Toolbar>
-                    <Item location='before'>
-                        <span className='toolbar-header'>Appointments</span>
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        locateInMenu='auto'
+                    <Column
+                        dataField={'FullName'}
+                        width={190}
+                        caption={'Patient Name'}
+                        hidingPriority={8}
+                        allowEditing={false}
+                        alignment='left'
+                    />
+                    <Column
+                        dataField={'DOB'}
+                        caption={'DOB'}
+                        dataType={'date'}
+                        hidingPriority={4}
+                        alignment='left'
+                    />
+                    <Column
+                        dataField={'Gender'}
+                        caption={'Gender'}
+                        hidingPriority={5}
+                        alignment='left'
                     >
-                        <Button
-                            text='Add New'
-                            icon='plus'
-                            stylingMode='contained'
-                            hint='Add New Appointment'
-                            className='add_btn'
-                            onClick={onAddAppointmentClick}
+                        <Lookup
+                            dataSource={GENDER}
+                            valueExpr={'value'}
+                            displayExpr={'name'}
                         />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        locateInMenu='auto'
+                    </Column>
+                    <Column
+                        dataField={'MobileNo'}
+                        caption={'Mobile No.'}
+                        hidingPriority={6}
+                        alignment='left'
+                    />
+                    <Column
+                        dataField={'Address'}
+                        caption={'Address'}
+                        hidingPriority={6}
+                        alignment='left'
+                    />
+                    <Column
+                        dataField={'ReasonForAppointment'}
+                        caption={'Reason For Appointment'}
+                        hidingPriority={0}
+                        alignment='left'
+                    />
+                    <Column
+                        caption={''}
+                        hidingPriority={8}
+                        type='buttons'
+                        width={'auto'}
+                        alignment='left'
                     >
-                        <Button
-                            text=''
-                            icon='refresh'
-                            stylingMode='text'
+                        <GridButton
+                            icon='edit'
+                            onClick={onEditAppointmentClick}
+                            hint='Edit'
+                        />
+                        <GridButton
+                            icon='trash'
+                            onClick={onDeleteAppointmentClick}
+                            hint='Delete'
+                        />
+                    </Column>
+                    <HeaderFilter visible={true}>
+                        <Search enabled={true} />
+                    </HeaderFilter>
+                    <ColumnChooser>
+                        <ColumnChooserSearch enabled />
+                    </ColumnChooser>
+                    <Toolbar>
+                        <Item location='before'>
+                            <span className='toolbar-header'>Appointments</span>
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                text='Add New'
+                                icon='plus'
+                                stylingMode='contained'
+                                hint='Add New Appointment'
+                                className='add_btn'
+                                onClick={onAddAppointmentClick}
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                text=''
+                                icon='refresh'
+                                stylingMode='text'
+                                showText='inMenu'
+                                onClick={refresh}
+                                hint='Refresh'
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
                             showText='inMenu'
-                            onClick={refresh}
-                        />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        showText='inMenu'
-                        locateInMenu='auto'
-                    >
-                        <Button
-                            icon='columnchooser'
-                            text='Column Chooser'
-                            stylingMode='text'
-                            onClick={showColumnChooser}
-                        />
-                    </Item>
-                    <Item location='after' locateInMenu='auto'>
-                        <div className='separator' />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        showText='inMenu'
-                        locateInMenu='auto'
-                    >
-                        <Button
-                            icon='exportpdf'
-                            text='Export To PDF'
-                            stylingMode='text'
-                            onClick={exportToPDF}
-                        />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxButton'
-                        showText='inMenu'
-                        locateInMenu='auto'
-                    >
-                        <Button
-                            icon='exportxlsx'
-                            text='Export To XSLX'
-                            stylingMode='text'
-                            onClick={exportToXSLX}
-                        />
-                    </Item>
-                    <Item
-                        location='after'
-                        widget='dxTextBox'
-                        locateInMenu='auto'
-                    >
-                        <TextBox
-                            mode='search'
-                            placeholder='Search'
-                            onInput={search}
-                        />
-                    </Item>
-                </Toolbar>
-            </DataGrid>
-
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                icon='columnchooser'
+                                text='Column Chooser'
+                                stylingMode='text'
+                                onClick={showColumnChooser}
+                                hint='Column Chooser'
+                            />
+                        </Item>
+                        <Item location='after' locateInMenu='auto'>
+                            <div className='separator' />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            showText='inMenu'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                icon='exportpdf'
+                                text='Export To PDF'
+                                stylingMode='text'
+                                onClick={exportToPDF}
+                                hint='Download PDF'
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxButton'
+                            showText='inMenu'
+                            locateInMenu='auto'
+                        >
+                            <Button
+                                icon='exportxlsx'
+                                text='Export To XSLX'
+                                stylingMode='text'
+                                onClick={exportToXSLX}
+                                hint='Download XL'
+                            />
+                        </Item>
+                        <Item
+                            location='after'
+                            widget='dxTextBox'
+                            locateInMenu='auto'
+                        >
+                            <TextBox
+                                mode='search'
+                                placeholder='Search'
+                                onInput={search}
+                                width={300}
+                            />
+                        </Item>
+                    </Toolbar>
+                </DataGrid>
+            </div>
             {
                 popupVisible && (
                     <CreateEditPopup
@@ -571,7 +624,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                         />
                     </SimpleItem>
                     <SimpleItem>
-                        <SelectBox
+                        <FormSelectbox
                             label='Gender'
                             value={formData.Gender}
                             dataSource={GENDER}
@@ -584,7 +637,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                             <Validator>
                                 <RequiredRule />
                             </Validator>
-                        </SelectBox>
+                        </FormSelectbox>
                     </SimpleItem>
                     <SimpleItem>
                         <FormTextbox
@@ -597,7 +650,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                         />
                     </SimpleItem>
                     <SimpleItem>
-                        <SelectBox
+                        <FormSelectbox
                             label='MaritalStatus'
                             value={formData.MaritalStatus}
                             dataSource={MARTIAL_STATUS}
@@ -610,7 +663,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                             <Validator>
                                 <RequiredRule />
                             </Validator>
-                        </SelectBox>
+                        </FormSelectbox>
                     </SimpleItem>
                     <SimpleItem></SimpleItem>
                     <SimpleItem colSpan={2}>
@@ -623,7 +676,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                         />
                     </SimpleItem>
                     <SimpleItem>
-                        <SelectBox
+                        <FormSelectbox
                             label='State'
                             value={formData.StateID}
                             dataSource={states}
@@ -636,10 +689,10 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                             <Validator>
                                 <RequiredRule />
                             </Validator>
-                        </SelectBox>
+                        </FormSelectbox>
                     </SimpleItem>
                     <SimpleItem>
-                        <SelectBox
+                        <FormSelectbox
                             label='City'
                             value={formData.CityID}
                             dataSource={cities}
@@ -652,10 +705,10 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                             <Validator>
                                 <RequiredRule />
                             </Validator>
-                        </SelectBox>
+                        </FormSelectbox>
                     </SimpleItem>
                     <SimpleItem>
-                        <SelectBox
+                        <FormSelectbox
                             ref={specialitySelectBoxRef}
                             label='Speciality'
                             value={formData.SpecialityID}
@@ -679,10 +732,10 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                             <Validator>
                                 <RequiredRule />
                             </Validator>
-                        </SelectBox>
+                        </FormSelectbox>
                     </SimpleItem>
                     <SimpleItem>
-                        <SelectBox
+                        <FormSelectbox
                             ref={doctorSelectBoxRef}
                             label='Doctor'
                             value={formData.DoctorID}
@@ -706,7 +759,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
                             <Validator>
                                 <RequiredRule />
                             </Validator>
-                        </SelectBox>
+                        </FormSelectbox>
                     </SimpleItem>
                     <SimpleItem colSpan={2}>
                         <TextArea
