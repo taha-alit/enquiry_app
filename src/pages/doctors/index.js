@@ -167,12 +167,12 @@ const Doctors = () => {
                     showRowLines={true}
                     focusedRowEnabled={true}
                     wordWrapEnabled={true}
-                    hoverStateEnabled={true}
+                    // hoverStateEnabled={true}
                     allowColumnReordering={true}
                     allowColumnResizing={true}
-                    autoNavigateToFocusedRow={true}
+                    // autoNavigateToFocusedRow={true}
                     filterSyncEnabled={true}
-                    defaultFocusedRowIndex={0}
+                    // defaultFocusedRowIndex={0}
                     columnAutoWidth
                     columnHidingEnabled
                     height={'100%'}
@@ -192,7 +192,7 @@ const Doctors = () => {
                         infoText={`{2} Rows`}
                     // displayMode='full'
                     />
-                    <FilterRow visible />
+                    {/* <FilterRow visible /> */}
                     <Column
                         dataField={'DoctorID'}
                         width={190}

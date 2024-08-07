@@ -18,7 +18,7 @@ export default function Task() {
         dataSource={dataSource}
         showBorders={false}
         focusedRowEnabled={true}
-        defaultFocusedRowIndex={0}
+        // defaultFocusedRowIndex={0}
         columnAutoWidth={true}
         columnHidingEnabled={true}
       >

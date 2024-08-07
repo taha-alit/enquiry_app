@@ -1,4 +1,5 @@
 // @use "../../../variables.scss" as *;
+@import "../../../themes/generated/variables.base.scss";
 
 .form-popup .dx-toolbar-center {
   width: 100%;
@@ -11,9 +12,9 @@
   gap: var(--popup-toolbar-item-spacing);
   .dx-button-default {
     margin-left: 10px;
-    background-color: #555557;
+    background-color: $base-accent;
     :hover {
-      background-color: #555557;
+      background-color: $base-accent;
     }
   };
   &.flex-buttons {

@@ -1,9 +1,13 @@
+@import "../../themes/generated/variables.base.scss";
+
 .add_btn {
-    background-color: #363640;
+    background-color: $base-accent;
     color: #fff;
+
     :hover {
-        background-color: #555557;
+        background-color: $base-accent
     }
+
     .dx-icon {
         color: #fff;
     }
@@ -34,6 +38,9 @@
 
 .dx-command-edit {
     .dx-link {
-        color: #555557;
+        color: $base-accent;
+        :hover {
+            color: $base-accent
+        }
     }
 }
