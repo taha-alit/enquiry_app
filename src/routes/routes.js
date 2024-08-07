@@ -2,6 +2,7 @@ import React from 'react';
 import { createBrowserRouter } from 'react-router-dom';
 import { SingleCard } from '../layouts';
 import PrivateRoute from './PrivateRoute';
+import { withNavigationWatcher } from '../contexts/navigation';
 
 const LoginWrapper = React.lazy(() => import('../components/login-form/LoginForm'));
 const HomeWrapper = React.lazy(() => import('../pages/home'));
@@ -42,7 +43,7 @@ const routes = [
             <PrivateRoute>
                 <AppointmentsWrapper />
             </PrivateRoute>
-        ) 
+        )
     },
     {
         path: '/doctors',
@@ -66,7 +67,7 @@ const routes = [
             <PrivateRoute>
                 <SpecialitiesWrapper />
             </PrivateRoute>
-        ) 
+        )
     },
     {
         path: '/receipts',
@@ -74,9 +75,14 @@ const routes = [
             <PrivateRoute>
                 <ReceiptsWrapper />
             </PrivateRoute>
-        ) 
+        )
     },
 ];
 
-const router = createBrowserRouter(routes);
+const router = createBrowserRouter(routes.map(route => {
+    return {
+        ...route,
+        element: withNavigationWatcher(route.element, route.path)
+    };
+}));
 export default router;

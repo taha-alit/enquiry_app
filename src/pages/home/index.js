@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <React.Fragment>
       <div className={'logos-container'}>
-        <img src={`${process.env.PUBLIC_URL}/enquiry-logo.jpg`} style={{ height: '25%', width: '25%' }} />
+        <img src={`${process.env.PUBLIC_URL}/logo.svg`} style={{ height: '25%', width: '25%' }} />
         <div className='content'>
           Welcome to Enquiry Dashboard
         </div>

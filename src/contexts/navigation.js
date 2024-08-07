@@ -23,7 +23,7 @@ function withNavigationWatcher(Component, path) {
       setNavigationData({ currentPath: path });
     }, [setNavigationData]);
 
-    return <Component {...props} />;
+    return Component;
   }
   return <WrappedComponent />;
 }
