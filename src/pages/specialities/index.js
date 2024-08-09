@@ -15,7 +15,8 @@ import DataGrid, {
     ColumnChooser,
     FilterBuilderPopup,
     FilterPanel,
-    Scrolling
+    Scrolling,
+    StateStoring
 } from 'devextreme-react/data-grid';
 import { deleteById, get, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
@@ -159,6 +160,10 @@ const Specialities = () => {
                     <FilterBuilderPopup width={'25%'} height={'40%'} title='Apply FIlter' />
                     <FilterPanel visible filterEnabled />
                     <Scrolling mode='infinite' rowRenderingMode='virtual' preloadEnabled={true} useNative={true} />
+                    <ColumnChooser enabled>
+                        <ColumnChooserSearch enabled />
+                    </ColumnChooser>
+                    <StateStoring enabled={true} type='localStorage' storageKey='Specialities_Layout' />
                     {/* <Paging defaultPageSize={10} /> */}
                     <Pager
                         visible
@@ -214,9 +219,6 @@ const Specialities = () => {
                     <HeaderFilter visible={true}>
                         <Search enabled={true} />
                     </HeaderFilter>
-                    <ColumnChooser>
-                        <ColumnChooserSearch enabled />
-                    </ColumnChooser>
                     <Toolbar>
                         <Item location='before'>
                             <span className='toolbar-header'>Specialities</span>
@@ -249,20 +251,7 @@ const Specialities = () => {
                                 hint='Refresh'
                             />
                         </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='columnchooser'
-                                text='Column Chooser'
-                                stylingMode='text'
-                                onClick={showColumnChooser}
-                                hint='Column Chooser'
-                            />
-                        </Item>
+                        <Item location='after' name='columnChooserButton'/>
                         <Item location='after' locateInMenu='auto'>
                             <div className='separator' />
                         </Item>

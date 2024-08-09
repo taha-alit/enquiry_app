@@ -44,6 +44,7 @@ export const FormPopup = ({
       width={width}
       wrapperAttr={{ ...wrapperAttr, class: `${wrapperAttr?.class} form-popup` }}
       height={height}
+      position={'center'}
     >
       <ToolbarItem
         toolbar='bottom'

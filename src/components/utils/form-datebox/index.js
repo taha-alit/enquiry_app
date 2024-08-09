@@ -28,6 +28,7 @@ export const FormDateBox = ({
       onValueChange={onValueChange}
       useMaskBehavior
       min={minDate}
+      pickerType='calendar'
       dateOutOfRangeMessage="Invalid Date"
     >
       <Validator>

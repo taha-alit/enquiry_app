@@ -16,7 +16,8 @@ import DataGrid, {
     ColumnChooser,
     FilterBuilderPopup,
     FilterPanel,
-    Scrolling
+    Scrolling,
+    StateStoring
 } from 'devextreme-react/data-grid';
 import { deleteById, get, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
@@ -61,12 +62,16 @@ const Appointments = () => {
     const [deletePopupVisible, setDeletePopupVisible] = React.useState(false);
     const [formAppointmentInitData, setFormAppointmentInitData] = React.useState({ ...newAppointmentDefaults });
     const [deleteKey, setDeleteKey] = React.useState(null);
+    const [focusedRowKey, setFocusedRowKey] = React.useState(null);
 
     const dataSource = React.useMemo(() => new DataSource({
         key: 'AppointmentID',
         async load() {
             try {
                 const response = await makeRequest('Patient/GetList', get);
+                if(response.length) {
+                    setFocusedRowKey(response[0].AppointmentID)
+                }
                 return response;
             } catch (error) {
                 notify(error.message, 'error', 2000);
@@ -145,6 +150,10 @@ const Appointments = () => {
         gridRef.current?.instance().showColumnChooser();
     };
 
+    const onFocusedRowChanged = (e) => {
+        setFocusedRowKey(e.component.option('focusedRowKey'));
+    }
+
     const exportToPDF = () => {
         const doc = new jsPDF();
         exportDataGrid({
@@ -213,21 +222,30 @@ const Appointments = () => {
                     showRowLines={true}
                     focusedRowEnabled={true}
                     wordWrapEnabled={true}
-                    // hoverStateEnabled={true}
+                    hoverStateEnabled={true}
                     allowColumnReordering={true}
                     allowColumnResizing={true}
-                    // autoNavigateToFocusedRow={true}
-                    filterSyncEnabled={true}
-                    // defaultFocusedRowIndex={0}
-                    columnAutoWidth
-                    columnHidingEnabled
+                    autoNavigateToFocusedRow={true}
+                    focusedRowKey={focusedRowKey}
+                    onFocusedRowChanged={onFocusedRowChanged}
+                    keyExpr="candidateID"
                     height={'100%'}
                     width={"100%"}
+                    filterSyncEnabled={true}
+                    // onOptionChanged={onOptionChange}
+                    loadPanel={{ enabled: true }}
+                    // onRowDblClick={onRowDblClick}
                     noDataText='No Record Found'
                 >
                     <FilterBuilderPopup width={'25%'} height={'40%'} title='Apply FIlter' />
                     <FilterPanel visible filterEnabled />
                     <Scrolling mode='infinite' rowRenderingMode='virtual' preloadEnabled={true} useNative={true} />
+                    <ColumnChooser enabled={true}>
+                        <ColumnChooserSearch
+                            enabled={true}
+                        />
+                    </ColumnChooser>
+                    <StateStoring enabled={true} type='localStorage' storageKey='Appointment_Layout' />
                     {/* <Paging defaultPageSize={10} /> */}
                     <Pager
                         visible
@@ -242,7 +260,6 @@ const Appointments = () => {
                     <Column
                         dataField={'AppointmentID'}
                         caption={'App No'}
-                        hidingPriority={2}
                         allowEditing={false}
                         alignment='left'
                     />
@@ -250,14 +267,13 @@ const Appointments = () => {
                         dataField={'AppointmentDateTime'}
                         caption={'Appt Date & Time'}
                         dataType={'datetime'}
-                        hidingPriority={3}
+                        format={"EEEE, d of MMM, yyyy HH:mm"}
                         alignment='left'
                     />
                     <Column
                         dataField={'FullName'}
                         width={190}
                         caption={'Patient Name'}
-                        hidingPriority={8}
                         allowEditing={false}
                         alignment='left'
                     />
@@ -265,13 +281,11 @@ const Appointments = () => {
                         dataField={'DOB'}
                         caption={'DOB'}
                         dataType={'date'}
-                        hidingPriority={4}
                         alignment='left'
                     />
                     <Column
                         dataField={'Gender'}
                         caption={'Gender'}
-                        hidingPriority={5}
                         alignment='left'
                     >
                         <Lookup
@@ -283,24 +297,20 @@ const Appointments = () => {
                     <Column
                         dataField={'MobileNo'}
                         caption={'Mobile No.'}
-                        hidingPriority={6}
                         alignment='left'
                     />
                     <Column
                         dataField={'Address'}
                         caption={'Address'}
-                        hidingPriority={6}
                         alignment='left'
                     />
                     <Column
                         dataField={'ReasonForAppointment'}
                         caption={'Reason For Appointment'}
-                        hidingPriority={0}
                         alignment='left'
                     />
                     <Column
                         caption={''}
-                        hidingPriority={8}
                         type='buttons'
                         width={'auto'}
                         alignment='left'
@@ -319,9 +329,6 @@ const Appointments = () => {
                     <HeaderFilter visible={true}>
                         <Search enabled={true} />
                     </HeaderFilter>
-                    <ColumnChooser>
-                        <ColumnChooserSearch enabled />
-                    </ColumnChooser>
                     <Toolbar>
                         <Item location='before'>
                             <span className='toolbar-header'>Appointments</span>
@@ -354,7 +361,7 @@ const Appointments = () => {
                                 hint='Refresh'
                             />
                         </Item>
-                        <Item
+                        {/* <Item
                             location='after'
                             widget='dxButton'
                             showText='inMenu'
@@ -367,7 +374,8 @@ const Appointments = () => {
                                 onClick={showColumnChooser}
                                 hint='Column Chooser'
                             />
-                        </Item>
+                        </Item> */}
+                        <Item location={'after'} name="columnChooserButton" />
                         <Item location='after' locateInMenu='auto'>
                             <div className='separator' />
                         </Item>
