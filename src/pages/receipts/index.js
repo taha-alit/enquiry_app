@@ -4,8 +4,6 @@ import 'devextreme/data/odata/store';
 import DataGrid, {
     Column,
     Pager,
-    Paging,
-    FilterRow,
     Lookup,
     Toolbar,
     Item,
@@ -30,7 +28,6 @@ import { saveAs } from 'file-saver-es';
 import DataSource from 'devextreme/data/data_source';
 import { Button } from 'devextreme-react/button';
 import Form, { GroupItem, ColCountByScreen, SimpleItem } from 'devextreme-react/form';
-import { getSizeQualifier } from '../../utils/media-query'
 import 'devextreme-react/text-area';
 import { FormDateBox } from '../../components/utils/form-datebox'
 import { FormPopup } from '../../components/utils/form-popup';
@@ -40,16 +37,11 @@ import { FormSelectbox } from '../../components/utils/form-selectbox';
 import { Button as SelectButton } from 'devextreme-react/select-box';
 import TextArea from 'devextreme-react/text-area';
 import { TextBox } from 'devextreme-react/text-box';
-import { exportDataGrid } from 'devextreme/pdf_exporter';
-import { exportDataGrid as exportDataGridXSLX } from 'devextreme/excel_exporter';
 import Validator, { CustomRule, RequiredRule } from 'devextreme-react/validator';
-
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import { newDoctorDefaults, CreateEditPopup as DoctorCreateEditPopup } from '../doctors';
-import { newSpecialityDefaults, CreateEditPopup as SpecialityCreateEditPopup } from '../specialities';
-import { NumberBox } from 'devextreme-react/number-box';
 import { FormNumberbox } from '../../components/utils/form-numberbox';
+import Header from '../../components/header/Header';
+import { HideDatagridLoader } from '../../utils/common-methods';
 
 const phonePattern = /^[6-9]\d{9}$/;
 
@@ -58,6 +50,7 @@ const Receipts = () => {
     const { makeRequest, loading, error, resetError } = useApi();
     const gridRef = React.useRef();
 
+    const [receipts, setReceipts] = React.useState([]);
     const [doctors, setDoctors] = React.useState([]);
     const [specialities, setSpecialities] = React.useState([]);
     const [items, setItems] = React.useState([]);
@@ -65,25 +58,28 @@ const Receipts = () => {
     const [deletePopupVisible, setDeletePopupVisible] = React.useState(false);
     const [formReceiptInitData, setFormReceiptInitData] = React.useState({ ...newReceiptDefaults });
     const [deleteKey, setDeleteKey] = React.useState(null);
-
-    const dataSource = React.useMemo(() => new DataSource({
-        key: 'ReceiptID',
-        async load() {
-            try {
-                const response = await makeRequest('Receipt/GetList', get);
-                return response;
-            } catch (error) {
-                notify(error.message, 'error', 2000);
-            }
-        }
-    }), [])
+    const [focusedRowKey, setFocusedRowKey] = React.useState(null);
 
     React.useEffect(() => {
+        fetchReceipts();
         fetchDoctors();
         fetchItems();
         fetchSpeciality();
     }, []);
 
+    const fetchReceipts = async () => {
+        try {
+            resetError();
+            const receiptsData = await makeRequest('Receipt/GetList', get, {});
+            setReceipts(receiptsData);
+            if (receiptsData.length > 0) {
+                setFocusedRowKey(receiptsData[0].ReceiptID);
+            }
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
+        }
+    }
     const fetchDoctors = async () => {
         try {
             resetError();
@@ -115,10 +111,6 @@ const Receipts = () => {
         }
     }
 
-    const refreshDoctors = () => fetchDoctors();
-    const refreshItems = () => fetchItems();
-    const refreshSpeciality = () => fetchSpeciality();
-
     const changePopupVisibility = React.useCallback((isVisible) => {
         setFormReceiptInitData({ ...newReceiptDefaults });
         setPopupVisible(isVisible);
@@ -129,51 +121,15 @@ const Receipts = () => {
         setDeletePopupVisible(isVisible);
     }, []);
 
-    const refresh = () => {
-        gridRef.current.instance().refresh();
+    const onFocusedRowChanged = (e) => {
+        setFocusedRowKey(e.component.option('focusedRowKey'));
     }
 
-    const exportToPDF = () => {
-        const doc = new jsPDF();
-        exportDataGrid({
-            jsPDFDocument: doc,
-            component: gridRef.current?.instance(),
-        }).then(() => {
-            doc.save('Receipts.pdf');
-        });
-    };
-
-    const exportToXSLX = () => {
-        const workbook = new Workbook();
-        const worksheet = workbook.addWorksheet('Main sheet');
-
-        exportDataGridXSLX({
-            component: gridRef.current?.instance(),
-            worksheet,
-            autoFilterEnabled: true,
-        }).then(() => {
-            workbook.xlsx.writeBuffer().then((buffer) => {
-                saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'DataGrid.xlsx');
-            });
-        });
-    };
-
     const search = (e) => {
-        gridRef.current?.instance().searchByText(e.component.option('text') ?? '');
+        gridRef.current?.instance.searchByText(e.component.option('text') ?? '');
     };
 
-    const onAddReceiptClick = React.useCallback(async () => {
-        try {
-            receiptDetailItems = [];
-            const response = await makeRequest('Receipt/GenerateReceiptNo', get);
-            setFormReceiptInitData({ ...newReceiptDefaults, ReceiptNo: parseInt(response), ReceiptDate: new Date() });
-            setPopupVisible(true);
-        } catch (error) {
-            notify(error.message, 'error', 2000);
-        }
-    });
-
-    const onEditReceiptClick = async (evt) => {
+    const onEditClick = async (evt) => {
         try {
             const response = await makeRequest(`Receipt/GetDetailsByReceiptId/${evt.row.data.ReceiptID}`, get);
             receiptDetailItems = response.map(item => ({
@@ -190,7 +146,7 @@ const Receipts = () => {
         }
     }
 
-    const onDeleteReceiptClick = (evt) => {
+    const onDeleteClick = (evt) => {
         setDeleteKey(evt.row.data.ReceiptID);
         setDeletePopupVisible(true);
     }
@@ -199,7 +155,7 @@ const Receipts = () => {
         try {
             const response = await makeRequest(`Receipt/Delete/${deleteKey}`, deleteById);
             notify(response, 'success', 2000);
-            refresh();
+            fetchReceipts();
             setDeleteKey(null);
         } catch (error) {
             notify(error.message, 'error', 2000);
@@ -214,12 +170,29 @@ const Receipts = () => {
         return `Total Amount: $${e.value.toFixed(2)}`;
     }, []);
 
+    const handleAdd = async () => {
+        try {
+            receiptDetailItems = [];
+            const response = await makeRequest('Receipt/GenerateReceiptNo', get);
+            setFormReceiptInitData({ ...newReceiptDefaults, ReceiptNo: parseInt(response), ReceiptDate: new Date() });
+            setPopupVisible(true);
+        } catch (error) {
+            notify(error.message, 'error', 2000);
+        }
+    }
+
     return (
         <React.Fragment>
+            <Header
+                title={"Receipts"}
+                handleAdd={handleAdd}
+                dataGridRef={gridRef}
+                GetRecord={fetchReceipts}
+            />
             <div className='list-section'>
                 <DataGrid
-                    className={'dx-card wide-card'}
-                    dataSource={dataSource}
+                    className={'List_DataGrid'}
+                    dataSource={receipts}
                     ref={gridRef}
                     showBorders={true}
                     showColumnLines={false}
@@ -229,13 +202,16 @@ const Receipts = () => {
                     hoverStateEnabled={true}
                     allowColumnReordering={true}
                     allowColumnResizing={true}
-                    // autoNavigateToFocusedRow={true}
-                    filterSyncEnabled={true}
-                    // defaultFocusedRowIndex={0}
-                    columnAutoWidth
-                    columnHidingEnabled
+                    autoNavigateToFocusedRow={true}
+                    focusedRowKey={focusedRowKey}
+                    onFocusedRowChanged={onFocusedRowChanged}
+                    keyExpr="ReceiptID"
                     height={'100%'}
                     width={"100%"}
+                    filterSyncEnabled={true}
+                    // onOptionChanged={onOptionChange}
+                    loadPanel={HideDatagridLoader}
+                    // onRowDblClick={onRowDblClick}
                     noDataText='No Record Found'
                 >
                     <FilterBuilderPopup width={'25%'} height={'40%'} title='Apply FIlter' />
@@ -296,20 +272,26 @@ const Receipts = () => {
                     />
                     <Column
                         caption={''}
-                        hidingPriority={8}
                         type='buttons'
                         width={'auto'}
-                        alignment='left'
+                        alignment='right'
+                        fixed
                     >
                         <GridButton
+                            name='edit'
                             icon='edit'
-                            onClick={onEditReceiptClick}
                             hint='Edit'
+                            visible={true}
+                            onClick={onEditClick}
+                            cssClass='text-muted'
                         />
                         <GridButton
+                            name='delete'
                             icon='trash'
-                            onClick={onDeleteReceiptClick}
                             hint='Delete'
+                            visible={true}
+                            onClick={onDeleteClick}
+                            cssClass='text-danger'
                         />
                     </Column>
                     <Summary>
@@ -326,69 +308,7 @@ const Receipts = () => {
                         <Search enabled={true} />
                     </HeaderFilter>
                     <Toolbar>
-                        <Item location='before'>
-                            <span className='toolbar-header'>Receipts</span>
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text='Add New'
-                                icon='plus'
-                                stylingMode='contained'
-                                hint='Add New Receipt'
-                                className='add_btn'
-                                onClick={onAddReceiptClick}
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text=''
-                                icon='refresh'
-                                stylingMode='text'
-                                showText='inMenu'
-                                onClick={refresh}
-                                hint='Refresh'
-                            />
-                        </Item>
                         <Item location={'after'} name="columnChooserButton" />
-                        <Item location='after' locateInMenu='auto'>
-                            <div className='separator' />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportpdf'
-                                text='Export To PDF'
-                                stylingMode='text'
-                                onClick={exportToPDF}
-                                hint='Download PDF'
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportxlsx'
-                                text='Export To XSLX'
-                                stylingMode='text'
-                                onClick={exportToXSLX}
-                                hint='Download XL'
-                            />
-                        </Item>
                         <Item
                             location='after'
                             widget='dxTextBox'
@@ -398,7 +318,7 @@ const Receipts = () => {
                                 mode='search'
                                 placeholder='Search'
                                 onInput={search}
-                                width={300}
+                                width={500}
                             />
                         </Item>
                     </Toolbar>
@@ -411,12 +331,12 @@ const Receipts = () => {
                         onClose={changePopupVisibility}
                         data={formReceiptInitData}
                         makeRequest={makeRequest}
-                        refresh={refresh}
+                        refresh={fetchReceipts}
                         doctors={doctors}
                         items={items}
                         specialities={specialities}
-                        refreshDoctors={refreshDoctors}
-                        refreshSpeciality={refreshSpeciality}
+                        refreshDoctors={fetchDoctors}
+                        refreshSpeciality={fetchSpeciality}
                     />
                 )
             }
@@ -471,7 +391,7 @@ export const CreateEditPopup = ({ isOpen, onClose, data, refresh, makeRequest, .
 
     return (
 
-        <FormPopup title={'New Receipt'} visible={isOpen} setVisible={onClose} onSave={onSaveClick} width='70%'>
+        <FormPopup title={'New Receipt'} visible={isOpen} setVisible={onClose} onSave={onSaveClick}>
             <CreateEditForm
                 onDataChanged={onDataChanged}
                 editing
@@ -515,7 +435,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
         icon: "spindown",
         stylingMode: "text",
         onClick: (e) => {
-            var selectBoxInstance = doctorSelectBoxRef.current?.instance();
+            var selectBoxInstance = doctorSelectBoxRef.current?.instance;
             var isOpened = selectBoxInstance.option("opened");
             if (isOpened) {
                 selectBoxInstance.close();
@@ -585,7 +505,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
 
     return (
         <React.Fragment>
-            <Form screenByWidth={getSizeQualifier}>
+            <Form>
                 <GroupItem>
                     <ColCountByScreen xs={1} sm={1} md={2} lg={2} />
                     <SimpleItem>
@@ -771,7 +691,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, doctors, items, speciali
                                             if (!formData.DoctorID) {
                                                 notify('Please select person', 'error', 2000);
                                             } else {
-                                                receiptDetailGridRef.current.instance().addRow();
+                                                receiptDetailGridRef.current.instance.addRow();
                                             }
                                         }}
                                     />

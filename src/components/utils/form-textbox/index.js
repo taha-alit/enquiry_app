@@ -8,6 +8,7 @@ export const FormTextbox = ({ value, label, isEditing, onValueChange, mask = '',
   return (
     <TextBox
       label={label}
+      labelMode='floating'
       value={value}
       mask={mask}
       readOnly={isEditing}

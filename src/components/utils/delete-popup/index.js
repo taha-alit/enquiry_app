@@ -40,6 +40,7 @@ export const DeletePopup = ({
             width={width}
             wrapperAttr={{ ...wrapperAttr, class: `${wrapperAttr?.class} delete-popup` }}
             height={height}
+            showCloseButton={false}
         >
             <ToolbarItem
                 toolbar='bottom'

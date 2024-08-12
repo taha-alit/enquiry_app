@@ -4,8 +4,6 @@ import 'devextreme/data/odata/store';
 import DataGrid, {
     Column,
     Pager,
-    Paging,
-    FilterRow,
     Toolbar,
     Item,
     Button as GridButton,
@@ -20,24 +18,15 @@ import DataGrid, {
 } from 'devextreme-react/data-grid';
 import { deleteById, get, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
-import { Workbook } from 'exceljs';
-import { saveAs } from 'file-saver-es';
 import DataSource from 'devextreme/data/data_source';
-import { Button } from 'devextreme-react/button';
 import Form, { GroupItem, ColCountByScreen, SimpleItem } from 'devextreme-react/form';
-import { getSizeQualifier } from '../../utils/media-query'
 import 'devextreme-react/text-area';
 import { FormPopup } from '../../components/utils/form-popup';
 import { DeletePopup } from '../../components/utils/delete-popup';
 import { FormTextbox } from '../../components/utils/form-textbox';
 import { TextBox } from 'devextreme-react/text-box';
-import { exportDataGrid } from 'devextreme/pdf_exporter';
-import { exportDataGrid as exportDataGridXSLX } from 'devextreme/excel_exporter';
-
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
-
-const phonePattern = /^[6-9]\d{9}$/;
+import Header from '../../components/header/Header';
+import { HideDatagridLoader } from '../../utils/common-methods';
 
 const Items = () => {
 
@@ -48,18 +37,25 @@ const Items = () => {
     const [deletePopupVisible, setDeletePopupVisible] = React.useState(false);
     const [formItemInitData, setFormItemInitData] = React.useState({ ...newItemDefaults });
     const [deleteKey, setDeleteKey] = React.useState(null);
+    const [items, setItems] = React.useState([]);
+    const [focusedRowKey, setFocusedRowKey] = React.useState(null);
 
-    const dataSource = React.useMemo(() => new DataSource({
-        key: 'ItemID',
-        async load() {
-            try {
-                const response = await makeRequest('Item/GetList', get);
-                return response;
-            } catch (error) {
-                notify(error.message, 'error', 2000);
+    const fetchItems = async () => {
+        try {
+            resetError();
+            const itemsData = await makeRequest('Item/GetList', get, {});
+            setItems(itemsData);
+            if(itemsData.length > 0) {
+                setFocusedRowKey(itemsData[0].ItemID);
             }
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
         }
-    }), []);
+    }
+    React.useEffect(() => {
+        fetchItems();
+    }, []);
 
     const changePopupVisibility = React.useCallback((isVisible) => {
         setFormItemInitData({ ...newItemDefaults });
@@ -71,50 +67,20 @@ const Items = () => {
         setDeletePopupVisible(isVisible);
     }, []);
 
-    const refresh = () => {
-        gridRef.current.instance().refresh();
+    const onFocusedRowChanged = (e) => {
+        setFocusedRowKey(e.component.option('focusedRowKey'));
     }
 
-    const exportToPDF = () => {
-        const doc = new jsPDF();
-        exportDataGrid({
-            jsPDFDocument: doc,
-            component: gridRef.current?.instance(),
-        }).then(() => {
-            doc.save('Items.pdf');
-        });
-    };
-
-    const exportToXSLX = () => {
-        const workbook = new Workbook();
-        const worksheet = workbook.addWorksheet('Main sheet');
-
-        exportDataGridXSLX({
-            component: gridRef.current?.instance(),
-            worksheet,
-            autoFilterEnabled: true,
-        }).then(() => {
-            workbook.xlsx.writeBuffer().then((buffer) => {
-                saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'DataGrid.xlsx');
-            });
-        });
-    };
-
     const search = (e) => {
-        gridRef.current?.instance().searchByText(e.component.option('text') ?? '');
+        gridRef.current?.instance.searchByText(e.component.option('text') ?? '');
     };
 
-    const onAddItemClick = React.useCallback(() => {
-        setFormItemInitData({ ...newItemDefaults });
-        setPopupVisible(true);
-    });
-
-    const onEditItemClick = (evt) => {
+    const onEditClick = (evt) => {
         setFormItemInitData({ ...evt.row.data });
         setPopupVisible(true);
     }
 
-    const onDeleteItemClick = (evt) => {
+    const onDeleteClick = (evt) => {
         setDeleteKey(evt.row.data.ItemID);
         setDeletePopupVisible(true);
     }
@@ -123,35 +89,48 @@ const Items = () => {
         try {
             const response = await makeRequest(`Item/Delete/${deleteKey}`, deleteById);
             notify(response, 'success', 2000);
-            refresh();
+            fetchItems();
             setDeleteKey(null);
         } catch (error) {
             notify(error.message, 'error', 2000);
         }
     }
 
+    const handleAdd = () => {
+        setPopupVisible(true);
+    }
+
     return (
         <React.Fragment>
+            <Header
+                title={"Items"}
+                handleAdd={handleAdd}
+                dataGridRef={gridRef}
+                GetRecord={fetchItems}
+            />
             <div className='list-section'>
                 <DataGrid
-                    className={'dx-card wide-card'}
-                    dataSource={dataSource}
+                    className={'List_DataGrid'}
+                    dataSource={items}
                     ref={gridRef}
                     showBorders={true}
                     showColumnLines={false}
                     showRowLines={true}
                     focusedRowEnabled={true}
                     wordWrapEnabled={true}
-                    // hoverStateEnabled={true}
+                    hoverStateEnabled={true}
                     allowColumnReordering={true}
                     allowColumnResizing={true}
-                    // autoNavigateToFocusedRow={true}
-                    filterSyncEnabled={true}
-                    // defaultFocusedRowIndex={0}
-                    columnAutoWidth
-                    columnHidingEnabled
+                    autoNavigateToFocusedRow={true}
+                    focusedRowKey={focusedRowKey}
+                    onFocusedRowChanged={onFocusedRowChanged}
+                    keyExpr="ItemID"
                     height={'100%'}
                     width={"100%"}
+                    filterSyncEnabled={true}
+                    // onOptionChanged={onOptionChange}
+                    loadPanel={HideDatagridLoader}
+                    // onRowDblClick={onRowDblClick}
                     noDataText='No Record Found'
                 >
                     <FilterBuilderPopup width={'25%'} height={'40%'} title='Apply FIlter' />
@@ -189,88 +168,33 @@ const Items = () => {
                     />
                     <Column
                         caption={''}
-                        hidingPriority={8}
                         type='buttons'
                         width={'auto'}
+                        alignment='right'
+                        fixed
                     >
                         <GridButton
+                            name='edit'
                             icon='edit'
-                            onClick={onEditItemClick}
                             hint='Edit'
+                            visible={true}
+                            onClick={onEditClick}
+                            cssClass='text-muted'
                         />
                         <GridButton
+                            name='delete'
                             icon='trash'
-                            onClick={onDeleteItemClick}
                             hint='Delete'
+                            visible={true}
+                            onClick={onDeleteClick}
+                            cssClass='text-danger'
                         />
                     </Column>
                     <HeaderFilter visible={true}>
                         <Search enabled={true} />
                     </HeaderFilter>
                     <Toolbar>
-                        <Item location='before'>
-                            <span className='toolbar-header'>Items</span>
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text='Add New'
-                                icon='plus'
-                                stylingMode='contained'
-                                hint='Add New Item'
-                                className='add_btn'
-                                onClick={onAddItemClick}
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text=''
-                                icon='refresh'
-                                stylingMode='text'
-                                showText='inMenu'
-                                onClick={refresh}
-                                hint='Refresh'
-                            />
-                        </Item>
                         <Item location={'after'} name="columnChooserButton" />
-                        <Item location='after' locateInMenu='auto'>
-                            <div className='separator' />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportpdf'
-                                text='Export To PDF'
-                                stylingMode='text'
-                                onClick={exportToPDF}
-                                hint='Download PDF'
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportxlsx'
-                                text='Export To XSLX'
-                                stylingMode='text'
-                                onClick={exportToXSLX}
-                                hint='Download XL'
-                            />
-                        </Item>
                         <Item
                             location='after'
                             widget='dxTextBox'
@@ -280,7 +204,7 @@ const Items = () => {
                                 mode='search'
                                 placeholder='Search'
                                 onInput={search}
-                                width={300}
+                                width={500}
                             />
                         </Item>
                     </Toolbar>
@@ -293,7 +217,7 @@ const Items = () => {
                         onClose={changePopupVisibility}
                         data={formItemInitData}
                         makeRequest={makeRequest}
-                        refresh={refresh}
+                        refresh={fetchItems}
                     />
                 )
             }
@@ -337,7 +261,7 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
 
     return (
 
-        <FormPopup title={'New Item'} visible={isOpen} setVisible={onClose} onSave={onSaveClick} height='250'>
+        <FormPopup title={'New Item'} visible={isOpen} setVisible={onClose} onSave={onSaveClick}>
             <CreateEditForm
                 onDataChanged={onDataChanged}
                 editing
@@ -365,7 +289,7 @@ const CreateEditForm = ({ data, onDataChanged, editing }) => {
 
     return (
         <React.Fragment>
-            <Form screenByWidth={getSizeQualifier}>
+            <Form>
                 <GroupItem>
                     <ColCountByScreen xs={1} />
                     <SimpleItem>

@@ -6,13 +6,14 @@
   flex-direction: column;
   min-height: 100%;
   height: 100%;
-  width: 250px !important;
+  width: 280px !important;
 
   .menu-container {
-    min-height: 100%;
+    min-height: calc(100vh - 140px);
+    
     display: flex;
     flex: 1;
-
+    background-color: $base-accent;
     .dx-treeview {
       // ## Long text positioning
       white-space: nowrap;
@@ -21,12 +22,22 @@
       // ## Icon width customization
       .dx-treeview-item {
         padding-left: 0;
-        flex-direction: row-reverse;
-
+        padding-right: 0;
+        font-size: 15px;
         .dx-icon {
-          width: $side-panel-min-width !important;
-          margin: 0 !important;
+          margin:0px 20px !important;
+          display: inline-block;
+          vertical-align: middle;
+          width: 22px;
+          height: 22px;
+          background-position: 0 0;
+          background-size: 22px 22px;
+          padding: 0;
+          font-size: 22px;
+          text-align: center;
+          line-height: 22px;
         }
+      
       }
       // ##
       
@@ -50,12 +61,17 @@
       .dx-treeview-node {
         &[aria-level='1'] {
           font-weight: bold;
-          border-bottom: 1px solid $base-border-color;
+          
         }
   
         &[aria-level='2'] .dx-treeview-item-content {
-          font-weight: normal;
-          padding: 0 $side-panel-min-width;
+          font-weight: 600;
+          padding: 0 50px;
+          
+          .dx-icon {
+            width: 28px !important;
+            margin: 0 !important;
+          }
         }
       }
       // ##
@@ -65,16 +81,20 @@
     .dx-treeview {
       .dx-treeview-node-container {
         .dx-treeview-node {
+          color: $base-light-accent;
+          :hover {
+            color: $base-light-accent;
+          }
           &.dx-state-selected:not(.dx-state-focused)> .dx-treeview-item {
             background: transparent;
           }
 
           &.dx-state-selected > .dx-treeview-item * {
-            color: $base-accent;
+            color:  $base-dark-yellow;
           }
 
           &:not(.dx-state-focused)>.dx-treeview-item.dx-state-hover {
-            background-color: lighten($base-bg, 4.00);
+            background-color: rgba(255, 255, 255, 0.099);
           }
         }
       }

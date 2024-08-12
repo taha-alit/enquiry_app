@@ -4,14 +4,10 @@ import 'devextreme/data/odata/store';
 import DataGrid, {
     Column,
     Pager,
-    Paging,
-    FilterRow,
     Lookup,
     Toolbar,
     Item,
     Button as GridButton,
-    HeaderFilter,
-    Search,
     ColumnChooserSearch,
     ColumnChooser,
     FilterBuilderPopup,
@@ -24,25 +20,19 @@ import notify from 'devextreme/ui/notify';
 import { Workbook } from 'exceljs';
 import { saveAs } from 'file-saver-es';
 import DataSource from 'devextreme/data/data_source';
-import { Button } from 'devextreme-react/button';
 import Form, { GroupItem, ColCountByScreen, SimpleItem } from 'devextreme-react/form';
-import { getSizeQualifier } from '../../utils/media-query'
 import 'devextreme-react/text-area';
-import { FormDateBox } from '../../components/utils/form-datebox'
 import { FormPopup } from '../../components/utils/form-popup';
 import { DeletePopup } from '../../components/utils/delete-popup';
 import { FormTextbox } from '../../components/utils/form-textbox';
 import { FormSelectbox } from '../../components/utils/form-selectbox';
 import { Button as SelectButton } from 'devextreme-react/select-box';
-import TextArea from 'devextreme-react/text-area';
 import { TextBox } from 'devextreme-react/text-box';
-import { exportDataGrid } from 'devextreme/pdf_exporter';
 import { exportDataGrid as exportDataGridXSLX } from 'devextreme/excel_exporter';
 import Validator, { RequiredRule } from 'devextreme-react/validator';
 import { newSpecialityDefaults, CreateEditPopup as SpecialityCreateEditPopup } from '../specialities';
-
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import Header from '../../components/header/Header';
+import { HideDatagridLoader } from '../../utils/common-methods';
 
 const Doctors = () => {
 
@@ -54,23 +44,27 @@ const Doctors = () => {
     const [deletePopupVisible, setDeletePopupVisible] = React.useState(false);
     const [formDoctorInitData, setFormDoctorInitData] = React.useState({ ...newDoctorDefaults });
     const [deleteKey, setDeleteKey] = React.useState(null);
-
-    const dataSource = React.useMemo(() => new DataSource({
-        key: 'DoctorID',
-        async load() {
-            try {
-                const response = await makeRequest('Doctor/GetList', get);
-                return response;
-            } catch (error) {
-                notify(error.message, 'error', 2000);
-            }
-        }
-    }), []);
+    const [doctors, setDoctors] = React.useState([]);
+    const [focusedRowKey, setFocusedRowKey] = React.useState(null);
 
     React.useEffect(() => {
+        fetchDoctors();
         fetchSpeciality();
     }, []);
-
+    
+    const fetchDoctors = async () => {
+        try {
+            resetError();
+            const doctorsData = await makeRequest('Doctor/GetList', get, {});
+            setDoctors(doctorsData);
+            if(doctorsData.length > 0) {
+                setFocusedRowKey(doctorsData[0].DoctorID);
+            }
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
+        }
+    }
     const fetchSpeciality = async () => {
         try {
             resetError();
@@ -81,7 +75,6 @@ const Doctors = () => {
             notify(err.message, 'error', 2000);
         }
     }
-    const refreshSpeciality = () => fetchSpeciality();
 
     const changePopupVisibility = React.useCallback((isVisible) => {
         setFormDoctorInitData({ ...newDoctorDefaults });
@@ -93,50 +86,20 @@ const Doctors = () => {
         setDeletePopupVisible(isVisible);
     }, []);
 
-    const refresh = () => {
-        gridRef.current.instance().refresh();
+    const onFocusedRowChanged = (e) => {
+        setFocusedRowKey(e.component.option('focusedRowKey'));
     }
 
-    const exportToPDF = () => {
-        const doc = new jsPDF();
-        exportDataGrid({
-            jsPDFDocument: doc,
-            component: gridRef.current?.instance(),
-        }).then(() => {
-            doc.save('Doctors.pdf');
-        });
-    };
-
-    const exportToXSLX = () => {
-        const workbook = new Workbook();
-        const worksheet = workbook.addWorksheet('Main sheet');
-
-        exportDataGridXSLX({
-            component: gridRef.current?.instance(),
-            worksheet,
-            autoFilterEnabled: true,
-        }).then(() => {
-            workbook.xlsx.writeBuffer().then((buffer) => {
-                saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'DataGrid.xlsx');
-            });
-        });
-    };
-
     const search = (e) => {
-        gridRef.current?.instance().searchByText(e.component.option('text') ?? '');
+        gridRef.current?.instance.searchByText(e.component.option('text') ?? '');
     };
 
-    const onAddDoctorClick = React.useCallback(() => {
-        setFormDoctorInitData({ ...newDoctorDefaults });
-        setPopupVisible(true);
-    });
-
-    const onEditDoctorClick = (evt) => {
+    const onEditClick = (evt) => {
         setFormDoctorInitData({ ...evt.row.data });
         setPopupVisible(true);
     }
 
-    const onDeleteDoctorClick = (evt) => {
+    const onDeleteClick = (evt) => {
         setDeleteKey(evt.row.data.DoctorID);
         setDeletePopupVisible(true);
     }
@@ -145,35 +108,48 @@ const Doctors = () => {
         try {
             const response = await makeRequest(`Doctor/Delete/${deleteKey}`, deleteById);
             notify(response, 'success', 2000);
-            refresh();
+            fetchDoctors();
             setDeleteKey(null);
         } catch (error) {
             notify(error.message, 'error', 2000);
         }
     }
 
+    const handleAdd = () => {
+        setPopupVisible(true);
+    }
+
     return (
         <React.Fragment>
+            <Header
+                title={"Doctors"}
+                handleAdd={handleAdd}
+                dataGridRef={gridRef}
+                GetRecord={fetchDoctors}
+            />
             <div className='list-section'>
                 <DataGrid
-                    className={'dx-card wide-card'}
-                    dataSource={dataSource}
+                    className={'List_DataGrid'}
+                    dataSource={doctors}
                     ref={gridRef}
                     showBorders={true}
                     showColumnLines={false}
                     showRowLines={true}
                     focusedRowEnabled={true}
                     wordWrapEnabled={true}
-                    // hoverStateEnabled={true}
+                    hoverStateEnabled={true}
                     allowColumnReordering={true}
                     allowColumnResizing={true}
-                    // autoNavigateToFocusedRow={true}
-                    filterSyncEnabled={true}
-                    // defaultFocusedRowIndex={0}
-                    columnAutoWidth
-                    columnHidingEnabled
+                    autoNavigateToFocusedRow={true}
+                    focusedRowKey={focusedRowKey}
+                    onFocusedRowChanged={onFocusedRowChanged}
+                    keyExpr="DoctorID"
                     height={'100%'}
                     width={"100%"}
+                    filterSyncEnabled={true}
+                    // onOptionChanged={onOptionChange}
+                    loadPanel={HideDatagridLoader}
+                    // onRowDblClick={onRowDblClick}
                     noDataText='No Record Found'
                 >
                     <FilterBuilderPopup width={'25%'} height={'40%'} title='Apply FIlter' />
@@ -231,86 +207,30 @@ const Doctors = () => {
                     />
                     <Column
                         caption={''}
-                        hidingPriority={8}
                         type='buttons'
                         width={'auto'}
-                        alignment='left'
+                        alignment='right'
+                        fixed
                     >
                         <GridButton
+                            name='edit'
                             icon='edit'
-                            onClick={onEditDoctorClick}
                             hint='Edit'
+                            visible={true}
+                            onClick={onEditClick}
+                            cssClass='text-muted'
                         />
                         <GridButton
+                            name='delete'
                             icon='trash'
-                            onClick={onDeleteDoctorClick}
                             hint='Delete'
+                            visible={true}
+                            onClick={onDeleteClick}
+                            cssClass='text-danger'
                         />
                     </Column>
                     <Toolbar>
-                        <Item location='before'>
-                            <span className='toolbar-header'>Doctors</span>
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text='Add New'
-                                icon='plus'
-                                stylingMode='contained'
-                                hint='Add New Doctor'
-                                className='add_btn'
-                                onClick={onAddDoctorClick}
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text=''
-                                icon='refresh'
-                                stylingMode='text'
-                                showText='inMenu'
-                                onClick={refresh}
-                                hint='Refresh'
-                            />
-                        </Item>
-                        <Item location='after' name='columnChooserButton' />
-                        <Item location='after' locateInMenu='auto'>
-                            <div className='separator' />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportpdf'
-                                text='Export To PDF'
-                                stylingMode='text'
-                                onClick={exportToPDF}
-                                hint='Download PDF'
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportxlsx'
-                                text='Export To XSLX'
-                                stylingMode='text'
-                                onClick={exportToXSLX}
-                                hint='Download XL'
-                            />
-                        </Item>
+                        <Item location={'after'} name="columnChooserButton" />
                         <Item
                             location='after'
                             widget='dxTextBox'
@@ -320,7 +240,7 @@ const Doctors = () => {
                                 mode='search'
                                 placeholder='Search'
                                 onInput={search}
-                                width={300}
+                                width={500}
                             />
                         </Item>
                     </Toolbar>
@@ -334,8 +254,8 @@ const Doctors = () => {
                         data={formDoctorInitData}
                         specialities={specialities}
                         makeRequest={makeRequest}
-                        refresh={refresh}
-                        refreshSpeciality={refreshSpeciality}
+                        refresh={fetchDoctors}
+                        refreshSpeciality={fetchSpeciality}
                     />
                 )
             }
@@ -379,7 +299,7 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
 
     return (
 
-        <FormPopup title={'New Doctor'} visible={isOpen} setVisible={onClose} onSave={onSaveClick} height='340'>
+        <FormPopup title={'New Doctor'} visible={isOpen} setVisible={onClose} onSave={onSaveClick}>
             <CreateEditForm
                 onDataChanged={onDataChanged}
                 editing
@@ -421,7 +341,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, specialities, makeReques
         icon: "spindown",
         stylingMode: "text",
         onClick: (e) => {
-            var selectBoxInstance = specialitySelectBoxRef.current?.instance();
+            var selectBoxInstance = specialitySelectBoxRef.current?.instance;
             var isOpened = selectBoxInstance.option("opened");
             if (isOpened) {
                 selectBoxInstance.close();
@@ -448,7 +368,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, specialities, makeReques
 
     return (
         <React.Fragment>
-            <Form screenByWidth={getSizeQualifier}>
+            <Form>
                 <GroupItem>
                     <ColCountByScreen xs={1} sm={1} md={2} lg={2} />
                     <SimpleItem>

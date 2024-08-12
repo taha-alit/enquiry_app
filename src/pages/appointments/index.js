@@ -4,8 +4,6 @@ import 'devextreme/data/odata/store';
 import DataGrid, {
     Column,
     Pager,
-    Paging,
-    FilterRow,
     Lookup,
     Toolbar,
     Item,
@@ -21,12 +19,8 @@ import DataGrid, {
 } from 'devextreme-react/data-grid';
 import { deleteById, get, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
-import { Workbook } from 'exceljs';
-import { saveAs } from 'file-saver-es';
 import DataSource from 'devextreme/data/data_source';
-import { Button } from 'devextreme-react/button';
 import Form, { GroupItem, ColCountByScreen, SimpleItem } from 'devextreme-react/form';
-import { getSizeQualifier } from '../../utils/media-query'
 import 'devextreme-react/text-area';
 import { FormDateBox } from '../../components/utils/form-datebox'
 import { FormPopup } from '../../components/utils/form-popup';
@@ -35,25 +29,20 @@ import { FormTextbox } from '../../components/utils/form-textbox';
 import { Button as SelectButton } from 'devextreme-react/select-box';
 import TextArea from 'devextreme-react/text-area';
 import { TextBox } from 'devextreme-react/text-box';
-import { exportDataGrid } from 'devextreme/pdf_exporter';
-import { exportDataGrid as exportDataGridXSLX } from 'devextreme/excel_exporter';
 import Validator, { RequiredRule } from 'devextreme-react/validator';
 
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
 import { newDoctorDefaults, CreateEditPopup as DoctorCreateEditPopup } from '../doctors';
 import { newSpecialityDefaults, CreateEditPopup as SpecialityCreateEditPopup } from '../specialities';
 import { FormSelectbox } from '../../components/utils/form-selectbox';
-import { FilterBuilder } from 'devextreme-react';
-
-const phonePattern = /^[6-9]\d{9}$/;
-const allowedPageSizes = [5, 10, 'all'];
+import Header from '../../components/header/Header';
+import { HideDatagridLoader } from '../../utils/common-methods';
 
 const Appointments = () => {
 
     const { makeRequest, loading, error, resetError } = useApi();
     const gridRef = React.useRef();
 
+    const [appointments, setAppointments] = React.useState([]);
     const [doctors, setDoctors] = React.useState([]);
     const [states, setStates] = React.useState([]);
     const [cities, setCities] = React.useState([]);
@@ -64,28 +53,42 @@ const Appointments = () => {
     const [deleteKey, setDeleteKey] = React.useState(null);
     const [focusedRowKey, setFocusedRowKey] = React.useState(null);
 
-    const dataSource = React.useMemo(() => new DataSource({
-        key: 'AppointmentID',
-        async load() {
-            try {
-                const response = await makeRequest('Patient/GetList', get);
-                if(response.length) {
-                    setFocusedRowKey(response[0].AppointmentID)
-                }
-                return response;
-            } catch (error) {
-                notify(error.message, 'error', 2000);
-            }
-        }
-    }), [])
+    // const dataSource = React.useMemo(() => new DataSource({
+    //     key: 'AppointmentID',
+    //     async load() {
+    //         try {
+    //             const response = await makeRequest('Patient/GetList', get);
+    //             if (response.length) {
+    //                 setFocusedRowKey(response[0].AppointmentID)
+    //             }
+    //             return response;
+    //         } catch (error) {
+    //             notify(error.message, 'error', 2000);
+    //         }
+    //     }
+    // }), [])
 
     React.useEffect(() => {
+        fetchAppointments();
         fetchDoctors();
         fetchSpeciality();
         fetchStates();
         fetchCities();
     }, []);
 
+    const fetchAppointments = async () => {
+        try {
+            resetError();
+            const appointmentsData = await makeRequest('Patient/GetList', get, {});
+            setAppointments(appointmentsData);
+            if(appointmentsData.length > 0) {
+                setFocusedRowKey(appointmentsData[0].AppointmentID);
+            }
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
+        }
+    }
     const fetchDoctors = async () => {
         try {
             resetError();
@@ -127,11 +130,6 @@ const Appointments = () => {
         }
     }
 
-    const refreshDoctors = () => fetchDoctors();
-    const refreshSpeciality = () => fetchSpeciality();
-    const refreshStates = () => fetchStates();
-    const refreshCities = () => fetchCities();
-
     const changePopupVisibility = React.useCallback((isVisible) => {
         setFormAppointmentInitData({ ...newAppointmentDefaults });
         setPopupVisible(isVisible);
@@ -142,58 +140,20 @@ const Appointments = () => {
         setDeletePopupVisible(isVisible);
     }, []);
 
-    const refresh = () => {
-        gridRef.current.instance().refresh();
-    }
-
-    const showColumnChooser = () => {
-        gridRef.current?.instance().showColumnChooser();
-    };
-
     const onFocusedRowChanged = (e) => {
         setFocusedRowKey(e.component.option('focusedRowKey'));
     }
 
-    const exportToPDF = () => {
-        const doc = new jsPDF();
-        exportDataGrid({
-            jsPDFDocument: doc,
-            component: gridRef.current?.instance(),
-        }).then(() => {
-            doc.save('Appointments.pdf');
-        });
-    };
-
-    const exportToXSLX = () => {
-        const workbook = new Workbook();
-        const worksheet = workbook.addWorksheet('Main sheet');
-
-        exportDataGridXSLX({
-            component: gridRef.current?.instance(),
-            worksheet,
-            autoFilterEnabled: true,
-        }).then(() => {
-            workbook.xlsx.writeBuffer().then((buffer) => {
-                saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'DataGrid.xlsx');
-            });
-        });
-    };
-
     const search = (e) => {
-        gridRef.current?.instance().searchByText(e.component.option('text') ?? '');
+        gridRef.current?.instance.searchByText(e.component.option('text') ?? '');
     };
 
-    const onAddAppointmentClick = React.useCallback(() => {
-        setFormAppointmentInitData({ ...newAppointmentDefaults });
-        setPopupVisible(true);
-    });
-
-    const onEditAppointmentClick = (evt) => {
+    const onEditClick = (evt) => {
         setFormAppointmentInitData({ ...evt.row.data });
         setPopupVisible(true);
     }
 
-    const onDeleteAppointmentClick = (evt) => {
+    const onDeleteClick = (evt) => {
         setDeleteKey(evt.row.data.AppointmentID);
         setDeletePopupVisible(true);
     }
@@ -202,20 +162,29 @@ const Appointments = () => {
         try {
             const response = await makeRequest(`Patient/Delete/${deleteKey}`, deleteById);
             notify(response, 'success', 2000);
-            refresh();
+            fetchAppointments();
             setDeleteKey(null);
         } catch (error) {
             notify(error.message, 'error', 2000);
         }
     }
 
+    const handleAdd = () => {
+        setPopupVisible(true);
+    }
+
     return (
         <React.Fragment>
-
+            <Header
+                title={"Appointments"}
+                handleAdd={handleAdd}
+                dataGridRef={gridRef}
+                GetRecord={fetchAppointments}
+            />
             <div className='list-section'>
                 <DataGrid
-                    className={'dx-card wide-card'}
-                    dataSource={dataSource}
+                    className={'List_DataGrid'}
+                    dataSource={appointments}
                     ref={gridRef}
                     showBorders={true}
                     showColumnLines={false}
@@ -228,12 +197,12 @@ const Appointments = () => {
                     autoNavigateToFocusedRow={true}
                     focusedRowKey={focusedRowKey}
                     onFocusedRowChanged={onFocusedRowChanged}
-                    keyExpr="candidateID"
+                    keyExpr="AppointmentID"
                     height={'100%'}
                     width={"100%"}
                     filterSyncEnabled={true}
                     // onOptionChanged={onOptionChange}
-                    loadPanel={{ enabled: true }}
+                    loadPanel={HideDatagridLoader}
                     // onRowDblClick={onRowDblClick}
                     noDataText='No Record Found'
                 >
@@ -313,100 +282,31 @@ const Appointments = () => {
                         caption={''}
                         type='buttons'
                         width={'auto'}
-                        alignment='left'
+                        alignment='right'
+                        fixed
                     >
                         <GridButton
+                            name='edit'
                             icon='edit'
-                            onClick={onEditAppointmentClick}
                             hint='Edit'
+                            visible={true}
+                            onClick={onEditClick}
+                            cssClass='text-muted'
                         />
                         <GridButton
+                            name='delete'
                             icon='trash'
-                            onClick={onDeleteAppointmentClick}
                             hint='Delete'
+                            visible={true}
+                            onClick={onDeleteClick}
+                            cssClass='text-danger'
                         />
                     </Column>
                     <HeaderFilter visible={true}>
                         <Search enabled={true} />
                     </HeaderFilter>
                     <Toolbar>
-                        <Item location='before'>
-                            <span className='toolbar-header'>Appointments</span>
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text='Add New'
-                                icon='plus'
-                                stylingMode='contained'
-                                hint='Add New Appointment'
-                                className='add_btn'
-                                onClick={onAddAppointmentClick}
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text=''
-                                icon='refresh'
-                                stylingMode='text'
-                                showText='inMenu'
-                                onClick={refresh}
-                                hint='Refresh'
-                            />
-                        </Item>
-                        {/* <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='columnchooser'
-                                text='Column Chooser'
-                                stylingMode='text'
-                                onClick={showColumnChooser}
-                                hint='Column Chooser'
-                            />
-                        </Item> */}
                         <Item location={'after'} name="columnChooserButton" />
-                        <Item location='after' locateInMenu='auto'>
-                            <div className='separator' />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportpdf'
-                                text='Export To PDF'
-                                stylingMode='text'
-                                onClick={exportToPDF}
-                                hint='Download PDF'
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportxlsx'
-                                text='Export To XSLX'
-                                stylingMode='text'
-                                onClick={exportToXSLX}
-                                hint='Download XL'
-                            />
-                        </Item>
                         <Item
                             location='after'
                             widget='dxTextBox'
@@ -416,7 +316,7 @@ const Appointments = () => {
                                 mode='search'
                                 placeholder='Search'
                                 onInput={search}
-                                width={300}
+                                width={500}
                             />
                         </Item>
                     </Toolbar>
@@ -429,13 +329,13 @@ const Appointments = () => {
                         onClose={changePopupVisibility}
                         data={formAppointmentInitData}
                         makeRequest={makeRequest}
-                        refresh={refresh}
+                        refresh={fetchAppointments}
                         states={states}
                         cities={cities}
                         specialities={specialities}
                         doctors={doctors}
-                        refreshDoctors={refreshDoctors}
-                        refreshSpeciality={refreshSpeciality}
+                        refreshDoctors={fetchDoctors}
+                        refreshSpeciality={fetchSpeciality}
                     />
                 )
             }
@@ -546,7 +446,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
         icon: "spindown",
         stylingMode: "text",
         onClick: (e) => {
-            var selectBoxInstance = doctorSelectBoxRef.current?.instance();
+            var selectBoxInstance = doctorSelectBoxRef.current?.instance;
             var isOpened = selectBoxInstance.option("opened");
             if (isOpened) {
                 selectBoxInstance.close();
@@ -561,7 +461,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
         icon: "spindown",
         stylingMode: "text",
         onClick: (e) => {
-            var selectBoxInstance = specialitySelectBoxRef.current?.instance();
+            var selectBoxInstance = specialitySelectBoxRef.current?.instance;
             var isOpened = selectBoxInstance.option("opened");
             if (isOpened) {
                 selectBoxInstance.close();
@@ -592,7 +492,7 @@ const CreateEditForm = ({ data, onDataChanged, editing, states, cities, speciali
 
     return (
         <React.Fragment>
-            <Form screenByWidth={getSizeQualifier}>
+            <Form>
                 <GroupItem>
                     <ColCountByScreen xs={1} sm={1} md={2} lg={2} />
                     <SimpleItem>

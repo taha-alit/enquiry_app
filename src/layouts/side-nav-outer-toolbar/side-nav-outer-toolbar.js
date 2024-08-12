@@ -8,9 +8,6 @@ import { useScreenSize } from '../../utils/media-query';
 import { Template } from 'devextreme-react/core/template';
 import { useMenuPatch } from '../../utils/patches';
 
-
-
-
 export default function SideNavOuterToolbar({ title, children }) {
   const scrollViewRef = useRef(null);
   const navigate = useNavigate();
@@ -53,7 +50,7 @@ export default function SideNavOuterToolbar({ title, children }) {
     }
 
     navigate(itemData.path);
-    scrollViewRef.current.instance().scrollTo(0);
+    scrollViewRef.current.instance.scrollTo(0);
 
     if (!isLarge || menuStatus === MenuStatus.TemporaryOpened) {
       setMenuStatus(MenuStatus.Closed);

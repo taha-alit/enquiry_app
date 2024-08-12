@@ -7,6 +7,7 @@ export const FormSelectbox = ({ value, label, isEditing, dataSource, displayExpr
     return (
         <SelectBox
             label={label}
+            labelMode='floating'
             value={value}
             dataSource={dataSource}
             displayExpr={displayExpr}

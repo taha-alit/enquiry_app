@@ -1,6 +1,12 @@
 import 'devextreme/dist/css/dx.common.css';
 import './themes/generated/theme.base.css';
 import './themes/generated/theme.additional.css';
+import "bootstrap/dist/css/bootstrap.css";
+import 'devextreme/dist/css/dx.common.css';
+import './themes/generated/theme.base.css';
+import './themes/generated/theme.additional.css';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap/dist/js/bootstrap.bundle.min";
 import React from 'react';
 import { HashRouter as Router, RouterProvider } from 'react-router-dom';
 import './dx-styles.scss';

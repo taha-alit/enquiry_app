@@ -10,7 +10,7 @@ export const FormPopup = ({
   title,
   visible,
   width = 'auto',
-  height = '700',
+  height = 'auto',
   onSave,
   setVisible,
   wrapperAttr = { class: '' },
@@ -21,7 +21,7 @@ export const FormPopup = ({
   const validationGroup = useRef(null);
 
   const close = () => {
-    validationGroup.current?.instance().reset();
+    validationGroup.current?.instance.reset();
     setVisible(false);
   };
 
@@ -30,7 +30,7 @@ export const FormPopup = ({
   };
 
   const onSaveClick = () => {
-    if (!validationGroup.current?.instance().validate().isValid) return;
+    if (!validationGroup.current?.instance.validate().isValid) return;
 
     onSave && onSave();
     close();
@@ -45,6 +45,8 @@ export const FormPopup = ({
       wrapperAttr={{ ...wrapperAttr, class: `${wrapperAttr?.class} form-popup` }}
       height={height}
       position={'center'}
+      showCloseButton
+      onHiding={close}
     >
       <ToolbarItem
         toolbar='bottom'

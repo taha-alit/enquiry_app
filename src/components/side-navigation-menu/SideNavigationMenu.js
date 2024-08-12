@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback, useMemo } from 'react';
-import { TreeView } from 'devextreme-react/tree-view';
+import TreeView from 'devextreme-react/tree-view';
 import { navigation } from '../../app-navigation';
 import { useNavigation } from '../../contexts/navigation';
 import { useScreenSize } from '../../utils/media-query';
@@ -17,10 +17,16 @@ export default function SideNavigationMenu(props) {
     onMenuReady
   } = props;
 
-  const { isLarge } = useScreenSize();
+  const { isLarge, isExLarge } = useScreenSize();
+  // function normalizePath () {
+  //   return navigation.map((item) => (
+  //     { ...item, expanded: isLarge || isExLarge, path: item.path && !(/^\//.test(item.path)) ? `/${item.path}` : item.path }
+  //   ))
+  // }
+
   function normalizePath () {
     return navigation.map((item) => (
-      { ...item, expanded: isLarge, path: item.path && !(/^\//.test(item.path)) ? `/${item.path}` : item.path }
+      { ...item, expanded: false, path: item.path && !(/^\//.test(item.path)) ? `/${item.path}` : item.path }
     ))
   }
 
@@ -42,22 +48,22 @@ export default function SideNavigationMenu(props) {
 
     wrapperRef.current = element;
     events.on(element, 'dxclick', (e) => {
-      openMenu(e);
+      openMenu();
     });
   }, [openMenu]);
 
   useEffect(() => {
-    const treeView = treeViewRef.current && treeViewRef.current.instance();
+    const treeView = treeViewRef.current && treeViewRef.current.instance;
     if (!treeView) {
       return;
     }
-
+   
     if (currentPath !== undefined) {
       treeView.selectItem(currentPath);
       treeView.expandItem(currentPath);
     }
 
-    if (compactMode) {
+    if (compactMode ) {
       treeView.collapseAll();
     }
   }, [currentPath, compactMode]);
@@ -67,6 +73,7 @@ export default function SideNavigationMenu(props) {
       className={'dx-swatch-additional side-navigation-menu'}
       ref={getWrapperRef}
     >
+      {children}
       <div className={'menu-container'}>
         <TreeView
           ref={treeViewRef}
@@ -80,8 +87,6 @@ export default function SideNavigationMenu(props) {
           width={'100%'}
         />
       </div>
-      
-      {children}
     </div>
   );
 }

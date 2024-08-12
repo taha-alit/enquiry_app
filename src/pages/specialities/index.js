@@ -4,8 +4,6 @@ import 'devextreme/data/odata/store';
 import DataGrid, {
     Column,
     Pager,
-    Paging,
-    FilterRow,
     Toolbar,
     Item,
     Button as GridButton,
@@ -20,23 +18,17 @@ import DataGrid, {
 } from 'devextreme-react/data-grid';
 import { deleteById, get, post, put, useApi } from '../../helpers/useApi';
 import notify from 'devextreme/ui/notify';
-import { Workbook } from 'exceljs';
-import { saveAs } from 'file-saver-es';
 import DataSource from 'devextreme/data/data_source';
-import { Button } from 'devextreme-react/button';
 import Form, { GroupItem, ColCountByScreen, SimpleItem } from 'devextreme-react/form';
-import { getSizeQualifier } from '../../utils/media-query'
 import 'devextreme-react/text-area';
 import { FormPopup } from '../../components/utils/form-popup';
 import { DeletePopup } from '../../components/utils/delete-popup';
 import { FormTextbox } from '../../components/utils/form-textbox';
 import { TextBox } from 'devextreme-react/text-box';
-import { exportDataGrid } from 'devextreme/pdf_exporter';
-import { exportDataGrid as exportDataGridXSLX } from 'devextreme/excel_exporter';
 import { CheckBox } from 'devextreme-react/check-box';
 
-import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import Header from '../../components/header/Header';
+import { HideDatagridLoader } from '../../utils/common-methods';
 
 const Specialities = () => {
 
@@ -47,18 +39,25 @@ const Specialities = () => {
     const [deletePopupVisible, setDeletePopupVisible] = React.useState(false);
     const [formSpecialityInitData, setFormSpecialityInitData] = React.useState({ ...newSpecialityDefaults });
     const [deleteKey, setDeleteKey] = React.useState(null);
+    const [specialities, setSpecialities] = React.useState([]);
+    const [focusedRowKey, setFocusedRowKey] = React.useState(null);
 
-    const dataSource = React.useMemo(() => new DataSource({
-        key: 'SpecialityID',
-        async load() {
-            try {
-                const response = await makeRequest('Speciality/GetList', get);
-                return response;
-            } catch (error) {
-                notify(error.message, 'error', 2000);
+    const fetchSpecialities = async () => {
+        try {
+            resetError();
+            const specialitiesData = await makeRequest('Speciality/GetList', get, {});
+            setSpecialities(specialitiesData);
+            if(specialitiesData.length > 0) {
+                setFocusedRowKey(specialitiesData[0].SpecialityID);
             }
+        } catch (err) {
+            console.log(err.message);
+            notify(err.message, 'error', 2000);
         }
-    }), []);
+    }
+    React.useEffect(() => {
+        fetchSpecialities();
+    }, []);
 
     const changePopupVisibility = React.useCallback((isVisible) => {
         setFormSpecialityInitData({ ...newSpecialityDefaults });
@@ -70,54 +69,20 @@ const Specialities = () => {
         setDeletePopupVisible(isVisible);
     }, []);
 
-    const refresh = () => {
-        gridRef.current.instance().refresh();
+    const onFocusedRowChanged = (e) => {
+        setFocusedRowKey(e.component.option('focusedRowKey'));
     }
 
-    const showColumnChooser = () => {
-        gridRef.current?.instance().showColumnChooser();
-    };
-
-    const exportToPDF = () => {
-        const doc = new jsPDF();
-        exportDataGrid({
-            jsPDFDocument: doc,
-            component: gridRef.current?.instance(),
-        }).then(() => {
-            doc.save('Specialitys.pdf');
-        });
-    };
-
-    const exportToXSLX = () => {
-        const workbook = new Workbook();
-        const worksheet = workbook.addWorksheet('Main sheet');
-
-        exportDataGridXSLX({
-            component: gridRef.current?.instance(),
-            worksheet,
-            autoFilterEnabled: true,
-        }).then(() => {
-            workbook.xlsx.writeBuffer().then((buffer) => {
-                saveAs(new Blob([buffer], { type: 'application/octet-stream' }), 'DataGrid.xlsx');
-            });
-        });
-    };
-
     const search = (e) => {
-        gridRef.current?.instance().searchByText(e.component.option('text') ?? '');
+        gridRef.current?.instance.searchByText(e.component.option('text') ?? '');
     };
 
-    const onAddSpecialityClick = React.useCallback(() => {
-        setFormSpecialityInitData({ ...newSpecialityDefaults });
-        setPopupVisible(true);
-    });
-
-    const onEditSpecialityClick = (evt) => {
+    const onEditClick = (evt) => {
         setFormSpecialityInitData({ ...evt.row.data });
         setPopupVisible(true);
     }
 
-    const onDeleteSpecialityClick = (evt) => {
+    const onDeleteClick = (evt) => {
         setDeleteKey(evt.row.data.SpecialityID);
         setDeletePopupVisible(true);
     }
@@ -126,35 +91,48 @@ const Specialities = () => {
         try {
             const response = await makeRequest(`Speciality/Delete/${deleteKey}`, deleteById);
             notify(response, 'success', 2000);
-            refresh();
+            fetchSpecialities();
             setDeleteKey(null);
         } catch (error) {
             notify(error.message, 'error', 2000);
         }
     }
 
+    const handleAdd = () => {
+        setPopupVisible(true);
+    }
+
     return (
         <React.Fragment>
+            <Header
+                title={"Specialities"}
+                handleAdd={handleAdd}
+                dataGridRef={gridRef}
+                GetRecord={fetchSpecialities}
+            />
             <div className='list-section'>
                 <DataGrid
-                    className={'dx-card wide-card'}
-                    dataSource={dataSource}
+                    className={'List_DataGrid'}
+                    dataSource={specialities}
                     ref={gridRef}
                     showBorders={true}
                     showColumnLines={false}
                     showRowLines={true}
                     focusedRowEnabled={true}
                     wordWrapEnabled={true}
-                    // hoverStateEnabled={true}
+                    hoverStateEnabled={true}
                     allowColumnReordering={true}
                     allowColumnResizing={true}
-                    // autoNavigateToFocusedRow={true}
-                    filterSyncEnabled={true}
-                    // defaultFocusedRowIndex={0}
-                    columnAutoWidth
-                    columnHidingEnabled
+                    autoNavigateToFocusedRow={true}
+                    focusedRowKey={focusedRowKey}
+                    onFocusedRowChanged={onFocusedRowChanged}
+                    keyExpr="SpecialityID"
                     height={'100%'}
                     width={"100%"}
+                    filterSyncEnabled={true}
+                    // onOptionChanged={onOptionChange}
+                    loadPanel={HideDatagridLoader}
+                    // onRowDblClick={onRowDblClick}
                     noDataText='No Record Found'
                 >
                     <FilterBuilderPopup width={'25%'} height={'40%'} title='Apply FIlter' />
@@ -203,86 +181,33 @@ const Specialities = () => {
                     />
                     <Column
                         caption={''}
-                        hidingPriority={8}
                         type='buttons'
                         width={'auto'}
+                        alignment='right'
+                        fixed
                     >
                         <GridButton
+                            name='edit'
                             icon='edit'
-                            onClick={onEditSpecialityClick}
+                            hint='Edit'
+                            visible={true}
+                            onClick={onEditClick}
+                            cssClass='text-muted'
                         />
                         <GridButton
+                            name='delete'
                             icon='trash'
-                            onClick={onDeleteSpecialityClick}
+                            hint='Delete'
+                            visible={true}
+                            onClick={onDeleteClick}
+                            cssClass='text-danger'
                         />
                     </Column>
                     <HeaderFilter visible={true}>
                         <Search enabled={true} />
                     </HeaderFilter>
                     <Toolbar>
-                        <Item location='before'>
-                            <span className='toolbar-header'>Specialities</span>
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text='Add New'
-                                icon='plus'
-                                stylingMode='contained'
-                                hint='Add New Speciality'
-                                className='add_btn'
-                                onClick={onAddSpecialityClick}
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                text=''
-                                icon='refresh'
-                                stylingMode='text'
-                                showText='inMenu'
-                                onClick={refresh}
-                                hint='Refresh'
-                            />
-                        </Item>
-                        <Item location='after' name='columnChooserButton'/>
-                        <Item location='after' locateInMenu='auto'>
-                            <div className='separator' />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportpdf'
-                                text='Export To PDF'
-                                stylingMode='text'
-                                onClick={exportToPDF}
-                                hint='Download PDF'
-                            />
-                        </Item>
-                        <Item
-                            location='after'
-                            widget='dxButton'
-                            showText='inMenu'
-                            locateInMenu='auto'
-                        >
-                            <Button
-                                icon='exportxlsx'
-                                text='Export To XSLX'
-                                stylingMode='text'
-                                onClick={exportToXSLX}
-                                hint='Download XL'
-                            />
-                        </Item>
+                        <Item location={'after'} name="columnChooserButton" />
                         <Item
                             location='after'
                             widget='dxTextBox'
@@ -292,7 +217,7 @@ const Specialities = () => {
                                 mode='search'
                                 placeholder='Search'
                                 onInput={search}
-                                width={300}
+                                width={500}
                             />
                         </Item>
                     </Toolbar>
@@ -306,7 +231,7 @@ const Specialities = () => {
                         onClose={changePopupVisibility}
                         data={formSpecialityInitData}
                         makeRequest={makeRequest}
-                        refresh={refresh}
+                        refresh={fetchSpecialities}
                     />
                 )
             }
@@ -349,7 +274,7 @@ export const CreateEditPopup = ({ isOpen, onClose, data, makeRequest, refresh, .
 
     return (
 
-        <FormPopup title={'New Speciality'} visible={isOpen} setVisible={onClose} onSave={onSaveClick} height='300'>
+        <FormPopup title={'New Speciality'} visible={isOpen} setVisible={onClose} onSave={onSaveClick}>
             <CreateEditForm
                 onDataChanged={onDataChanged}
                 editing
@@ -366,6 +291,7 @@ const CreateEditForm = ({ data, onDataChanged, editing }) => {
     const [formData, setFormData] = React.useState({ ...data });
 
     React.useEffect(() => {
+        console.log(data)
         setFormData({ ...data });
     }, [data]);
 
@@ -377,7 +303,7 @@ const CreateEditForm = ({ data, onDataChanged, editing }) => {
 
     return (
         <React.Fragment>
-            <Form screenByWidth={getSizeQualifier}>
+            <Form>
                 <GroupItem>
                     <ColCountByScreen xs={1} sm={1} md={2} lg={2} />
                     <SimpleItem>
@@ -404,6 +330,7 @@ const CreateEditForm = ({ data, onDataChanged, editing }) => {
                             value={formData.IsGynac}
                             isEditing={!editing}
                             onValueChange={updateField('IsGynac')}
+                        // enableThreeStateBehavior
                         />
                     </SimpleItem>
 
@@ -416,7 +343,7 @@ const CreateEditForm = ({ data, onDataChanged, editing }) => {
 export const newSpecialityDefaults = {
     SpecialityID: 0,
     SpecialityName: '',
-    isGynac: false,
+    IsGynac: false,
     Description: ''
 }
 
